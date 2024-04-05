@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OTP in JS</title>
+<link rel="stylesheet" href="emailotp.css">
+<script src="https://smtpjs.com/v3/smtp.js"></script>
+</head>
+<body>
+<div class="form">
+  <h1>Email Verification</h1>
+  <input type="email" id="email" placeholder="Enter Email...">
+  <div class="otpverify">
+   <input type="text" id="otp_inp" placeholder="Enter the OTP sent to your Email...">
+   <button class="btn" id="verify-btn" onclick="verifyOTP()">Verify</button>
+  </div>
+  <button class="btn" onclick="sendOTP()">Send OTP</button>
+</div>
+
+<script>
+    function sendOTP() {
+        const email = document.getElementById('email');
+        const otpverify = document.getElementsByClassName('otpverify')[0];
+    
+        let otp_val = Math.floor(Math.random() * 10000);
+        Email.send({
+            secureToken:"8250eef-8249-491d-bb02-848fe3928811",
+            Host : "smtp.elasticemail.com",
+            Username : "ayanwestbengal20@gmail.com",
+            Password : "DA4E184B771237DE28F93B9611122898DDA7",
+            To : email.value,
+            From : "ayanwestbengal20@gmail.com",
+            Subject : "OTP verification",
+            Body : "Your OTP is " + otp_val 
+        }).then(message => {
+            if (message === "OK") {
+                alert("OTP sent to your email " + email.value);
+    
+                otpverify.style.display = "flex";
+                const otp_inp = document.getElementById('otp_inp');
+                const verify_btn = document.getElementById('verify-btn');
+    
+                verify_btn.addEventListener('click', () => {
+                    if (otp_inp.value == otp_val) {
+                        alert("Email address verified...");
+                    } else {
+                        alert("Invalid OTP");
+                    }
+                });
+            } else {
+                alert("Error occurred while sending OTP: " + JSON.stringify(message));
+            }
+        }).catch(error => {
+            alert("Error occurred while sending OTP: " + error);
+        });
+    }
+</script>    
+</body>
+</html>
