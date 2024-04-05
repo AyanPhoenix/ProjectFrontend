@@ -28,17 +28,17 @@
         <form action="#" id="login">
           <div class="input-box">
             <span class="icon"><ion-icon name="person"></ion-icon></span>
-            <input type="text" required />
+            <input type="text" name="username" required />
             <label>Username</label>
           </div>
           <div class="input-box">
             <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-            <input type="password" required />
+            <input type="password" name="password" required />
             <label>Password</label>
           </div>
           <div class="remember-forgot">
             <label><input type="checkbox" /> Remember me</label>
-            <a href="#">Forgot Password</a>
+            <a href="email_otp.html">Forgot Password</a>
           </div>
           <button type="submit" class="btn">LOGIN</button>
           <div class="login-register">
@@ -160,8 +160,7 @@
           .then((res) => {
             if (res.ok) {
               console.log("Login Successful!!!");
-              
-              window.location.href = "dashboard.html"; 
+              window.open("email_otp.html"); 
             } else {
               console.error("Error:", res.statusText);
               alert("Invalid credentials"); 
