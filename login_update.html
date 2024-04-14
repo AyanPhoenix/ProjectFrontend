@@ -33,14 +33,14 @@
           </div>
           <div class="input-box">
             <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-            <input type="password" name="password" required />
+            <input type="password" name="password" id="pass" autocomplete="off" required />
             <label>Password</label>
           </div>
           <div class="remember-forgot">
-            <label><input type="checkbox" /> Remember me</label>
+            <input type="checkbox" value="lsRememberMe" id="rememberme" ><label for="rememberme">Remember me</label> 
             <a href="email_otp.html">Forgot Password</a>
           </div>
-          <button type="submit" class="btn">LOGIN</button>
+          <button type="submit" class="btn" value="login" onclick="lsRememberMe()">LOGIN</button>
           <div class="login-register">
             <p>
               Don't have an account?
@@ -51,7 +51,7 @@
       </div>
       <div class="form-box register">
         <h2>Registration</h2>
-        <form action="#" id="register-form">
+        <form action="#" id="register-form" name="regform" onsubmit="return validation()">
           <div class="input-box">
             <span class="icon"><ion-icon name="person"></ion-icon></span>
             <input type="text" id="username" name="username" required />
@@ -59,14 +59,17 @@
           </div>
           <div class="input-box">
             <span class="icon"><ion-icon name="mail"></ion-icon></span>
-            <input type="email" id="email" name="email" required />
+            <input type="email" id="email" name="email" onchange="validation()" required />
             <label>Email</label>
+            <div id="email_error"></div>
           </div>
-          <div class="input-box">
+          <div class="textbox">
             <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-            <input type="password" id="password" name="password" pattern="(?=.*\d)(?=.*[a-z])(?.*[A-Z]).{8,}" title="Must contain atleast one number and one uppercase and lowercase letter,and at least 8 or more characters" required />
+            <input type="password" id="password" name="password" onchange="checkpassword()" required />
             <label>Password</label>
+            <div id="pass_err"></div>
           </div>
+          <p id="result"></p>
           <div class="remember-forgot">
             <label
               ><input type="checkbox" id="agreecon" required /> I agree to the
@@ -94,51 +97,71 @@
       src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
     ></script>
     <script>
-      function checkPasswordStrength(password) {
-        let strength;
-        if (password.length < 8) {
-          strength = "Weak";
-        } else if (password.length < 12) {
-          strength = "Moderate";
-        } else {
-          strength = "Strong";
-        }
-        alert(`Your password strength is: ${strength}`);
-      }
+      function checkpassword() {
+        const password = document.getElementById("password").value;
+        const password_pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{}\\|;:'",<.>/?]).{8,}$/;
+        const password_error = document.getElementById("pass_err");
     
-      let regForm = document.querySelector('#register-form');
-      regForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        let passwordInput = document.getElementById('password');
-        checkPasswordStrength(passwordInput.value);
-      });
-    </script>
-    <script>
-      let form = document.querySelector("#register-form");
-      form.addEventListener("submit", handleSubmit);
-
-      function handleSubmit(event) {
-        event.preventDefault();
-        let formData = new FormData(form);
-        let data = Object.fromEntries(formData);
-        let jsonData = JSON.stringify(data);
-
-        fetch("http://localhost:3000/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: jsonData,
-        })
-          .then((res) => {
-            if (res.ok) {
-              console.log("Connection Successful!!!");
-            } else {
-              console.error("Error:", res.statusText);
-            }
-          })
-          .catch((err) => console.error(err));
+        if (!password_pattern.test(password)) {
+            password_error.innerHTML = "Password must contain at least one number, one uppercase and lowercase letter, and at least 8 characters.";
+            password_error.style.color = "red";
+            return false;
+        } else {
+            password_error.innerHTML = "Verified";
+            password_error.style.color = "green";
+            return true;
+        }
+    }
+    
+      function validation() {
+        var email = document.getElementsByName("email")[0].value;
+        const email_pattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
+        var email_error = document.querySelector("#email_error");
+        var regex=RegExp(email_pattern)
+    
+        if (!regex.test(email)) {
+            email_error.innerHTML = "Invalid email";
+            email_error.style.color = "red";
+            return false;
+           
+        } else {
+          email_error.innerHTML="Verified";
+          email_error.style.color="green";
+          return true;
+        }
       }
+      let form = document.querySelector("#register-form");
+          form.addEventListener("submit", handleSubmit);
+    
+          function handleSubmit(event) {
+            event.preventDefault();
+            if(validation() && checkpassword()){
+              let formData = new FormData(form);
+              let data = Object.fromEntries(formData);
+              let jsonData = JSON.stringify(data);
+            
+              fetch("http://localhost:3000/register", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: jsonData,
+              })
+                .then((res) => {
+                  if (res.ok) {
+                    console.log("Connection Successful");
+                  }else if(res.status===401){
+                    alert("User already exists");
+                  }else if(res.status===400){
+                    alert("Email ID already exists");
+                  }
+                   else {
+                    console.error("Error:", res.statusText);
+                  }
+                })
+                .catch((err) => console.error(err));
+            }  
+            } 
     </script>
     <script>
       let loginForm = document.querySelector("#login");
@@ -160,7 +183,7 @@
           .then((res) => {
             if (res.ok) {
               console.log("Login Successful!!!");
-              window.open("email_otp.html"); 
+              window.open(); 
             } else {
               console.error("Error:", res.statusText);
               alert("Invalid credentials"); 
