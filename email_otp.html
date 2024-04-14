@@ -1,58 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OTP in JS</title>
-<link rel="stylesheet" href="emailotp.css">
-<script src="https://smtpjs.com/v3/smtp.js"></script>
+    <title>Email Verification and Password Change</title>
+    <link rel="stylesheet" href="emailotp.css">
+    <script src="https://smtpjs.com/v3/smtp.js"></script>
 </head>
 <body>
-<div class="form">
-  <h1>Email Verification</h1>
-  <input type="email" id="email" placeholder="Enter Email...">
-  <div class="otpverify">
-   <input type="text" id="otp_inp" placeholder="Enter the OTP sent to your Email...">
-   <button class="btn" id="verify-btn" onclick="verifyOTP()">Verify</button>
-  </div>
-  <button class="btn" onclick="sendOTP()">Send OTP</button>
-</div>
+    <div class="form">
+        <h1>Email Verification</h1>
+        <input type="email" id="email" placeholder="Enter Email...">
+        <div class="otpverify" style="display: none;">
+            <input type="text" id="otp_inp" placeholder="Enter the OTP sent to your Email...">
+            <button class="btn" id="verify-btn">Verify</button>
+        </div>
+        <button class="btn" id="send-otp-btn">Send OTP</button>
+        <div>
+            <span id="timer"></span>
+        </div>
+        <div class="change_pass" style="display: none;">
+            <form action="#" id="chng_pass">
+                <label for="newpass">New Password</label>
+                <input type="password" id="newpassword" name="newpassword" required><br><br>
+                <label for="conpass">Confirm Password</label> 
+                <input type="password" id="conpassword" name="conpassword" required><br><br>
+                <input type="hidden" id="email_hidden" name="email"> <!-- Hidden input field to store email -->
+                <button type="submit" name="btn" id="btn">Submit</button>
+            </form>
+        </div>
+    </div>
 
-<script>
-    function sendOTP() {
-        const email = document.getElementById('email');
-        const otpverify = document.getElementsByClassName('otpverify')[0];
-    
-        let otp_val = Math.floor(Math.random() * 10000);
-        Email.send({
-            secureToken:"8250eef-8249-491d-bb02-848fe3928811",
-            Host : "smtp.elasticemail.com",
-            Username : "ayanwestbengal20@gmail.com",
-            Password : "DA4E184B771237DE28F93B9611122898DDA7",
-            To : email.value,
-            From : "ayanwestbengal20@gmail.com",
-            Subject : "OTP verification",
-            Body : "Your OTP is " + otp_val 
-        }).then(message => {
-            if (message === "OK") {
-                alert("OTP sent to your email " + email.value);
-    
-                otpverify.style.display = "flex";
-                const otp_inp = document.getElementById('otp_inp');
-                const verify_btn = document.getElementById('verify-btn');
-    
-                verify_btn.addEventListener('click', () => {
-                    if (otp_inp.value == otp_val) {
-                        alert("Email address verified...");
-                    } else {
-                        alert("Invalid OTP");
-                    }
-                });
-            } else {
-                alert("Error occurred while sending OTP: " + JSON.stringify(message));
-            }
-        }).catch(error => {
-            alert("Error occurred while sending OTP: " + error);
-        });
-    }
-</script>    
+    <script>
+        document.getElementById('send-otp-btn').addEventListener('click', sendOTP);
+
+        function sendOTP() {
+            const email = document.getElementById('email').value;
+            const otpverify = document.querySelector('.otpverify');
+            const otpInput = document.getElementById('otp_inp');
+            const verifyBtn = document.getElementById('verify-btn');
+
+            const otp_val = Math.floor(Math.random() * 10000);
+
+            Email.send({
+                SecureToken: "8250eef-8249-491d-bb02-848fe3928811",
+                Host: "smtp.elasticemail.com",
+                Username: "ayanwestbengal20@gmail.com",
+                Password: "DA4E184B771237DE28F93B9611122898DDA7",
+                To: email,
+                From: "ayanwestbengal20@gmail.com",
+                Subject: "OTP verification",
+                Body: "Your OTP is " + otp_val
+            }).then(message => {
+                if (message === "OK") {
+                    alert("OTP sent to your email " + email);
+                    otpverify.style.display = "flex";
+
+                    verifyBtn.addEventListener('click', function () {
+                        if (otpInput.value == otp_val) {
+                            alert("Email address verified...");
+                            document.querySelector('.change_pass').style.display = "block";
+                            document.getElementById('email_hidden').value = email; // Store email in hidden input
+                            document.getElementById('email').style.display = 'none'; // Hide email input
+                        } else {
+                            alert("Invalid OTP");
+                        }
+                    });
+                    timer(60);
+                } else {
+                    throw new Error("Error occurred while sending OTP: " + JSON.stringify(message));
+                }
+            }).catch(error => {
+                alert("Error occurred while sending OTP: " + error);
+            });
+        }
+        
+        function timer(remaining) {
+            var timerOn=true;
+            var m=Math.floor(remaining/60);
+            var s=remaining%60;
+            m=m<10?'0'+m:m;
+            s=s<10?'0'+s:s;
+            document.getElementById('timer').innerHTML=m+':'+s;
+            remaining--;
+            if(remaining>=0 && timerOn){
+                setTimeout(function(){
+                    timer(remaining);
+                },1000);
+                return;
+            }
+            else{
+                document.getElementById('verify-btn').disabled=false;
+                document.getElementById('timer').textContent='';
+                countdown=120;
+                clearInterval(timer);
+            }
+            if(!timerOn){
+                return;
+            }
+        }
+
+        let form = document.querySelector("#chng_pass");
+        form.addEventListener("submit", modifypass);
+
+        function modifypass(event) {
+            event.preventDefault();
+            let formData = new FormData(form);
+            let data = Object.fromEntries(formData);
+            let jsonData = JSON.stringify(data);
+
+            fetch("http://localhost:3000/modify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: jsonData,
+            })
+            .then((res) => {
+                if (res.ok) {
+                    alert("Password updated successfully");
+                }else if(res.status===400){
+                    alert("password do not match")
+                }else if(res.status===404){
+                    alert("Invalid Email ID");
+                }else {
+                    throw new Error("An error occurred");
+                }
+            })
+            .catch((error) => {
+                console.error("Fetch Error:", error);
+                alert("An error occurred");
+            });
+        }
+    </script>
 </body>
 </html>
