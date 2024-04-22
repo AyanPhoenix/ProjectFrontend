@@ -18,6 +18,20 @@
         <button class="btnLogin-popup">Login</button>
       </nav>
     </header>
+    <style>
+       input[type=text]{
+        background-color: white;
+        color: black;
+      }
+      input[type=password]{
+        background-color: white;
+        color: black;
+      }
+      input[type=email]{
+        background-color: white;
+        color: black;
+      }
+    </style>
 
     <div class="wrapper">
       <span class="icon-close">
@@ -38,7 +52,7 @@
           </div>
           <div class="remember-forgot">
             <input type="checkbox" value="lsRememberMe" id="rememberme" ><label for="rememberme">Remember me</label> 
-            <a href="email_otp.html">Forgot Password</a>
+            <a href="email_otp.html" >Forgot Password</a>
           </div>
           <button type="submit" class="btn" value="login" onclick="lsRememberMe()">LOGIN</button>
           <div class="login-register">
@@ -63,7 +77,7 @@
             <label>Email</label>
             <div id="email_error"></div>
           </div>
-          <div class="textbox">
+          <div class="text-box">
             <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
             <input type="password" id="password" name="password" onchange="checkpassword()" required />
             <label>Password</label>
@@ -104,11 +118,11 @@
     
         if (!password_pattern.test(password)) {
             password_error.innerHTML = "Password must contain at least one number, one uppercase and lowercase letter, and at least 8 characters.";
-            password_error.style.color = "red";
+            password_error.style.color = "cyan";
             return false;
         } else {
             password_error.innerHTML = "Verified";
-            password_error.style.color = "green";
+            password_error.style.color = "white";
             return true;
         }
     }
@@ -121,12 +135,12 @@
     
         if (!regex.test(email)) {
             email_error.innerHTML = "Invalid email";
-            email_error.style.color = "red";
+            email_error.style.color = "cyan";
             return false;
            
         } else {
           email_error.innerHTML="Verified";
-          email_error.style.color="green";
+          email_error.style.color="white";
           return true;
         }
       }
@@ -150,10 +164,13 @@
                 .then((res) => {
                   if (res.ok) {
                     console.log("Connection Successful");
+                    window.location.href = "complete-profile.html";
                   }else if(res.status===401){
                     alert("User already exists");
                   }else if(res.status===400){
                     alert("Email ID already exists");
+                  }else if(res.status===404){
+                    alert("Invalid Email Id");
                   }
                    else {
                     console.error("Error:", res.statusText);
@@ -183,7 +200,7 @@
           .then((res) => {
             if (res.ok) {
               console.log("Login Successful!!!");
-              window.open(); 
+              window.open("profile_page.html"); 
             } else {
               console.error("Error:", res.statusText);
               alert("Invalid credentials"); 
