@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portfolio</title>
+    <link rel="stylesheet" href="profile_style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<style>
+  textarea{
+    background-color: white;
+    color: black;
+  }
+</style>
+<body>
+    <header>
+        <h2 class="logo">IDEALINK</h2>
+        <nav class="navigation">
+            <a href="#home">Home</a>
+            <a href="#about">About</a>
+            <a href="#projects">Projects</a>
+            <a href="#contact">Contact</a>
+            <a href="#admin">Admin</a>
+        </nav>
+    </header>
+
+    <section class="profile-completion" id="profile-completion">
+        <h2>Complete Your Profile</h2>
+        <form action="#" id="profile-form">
+            <input type="hidden" id="userId" name="userId">
+    
+            <div class="input-box">
+                <label for="profile-picture">Upload Profile Picture:</label>
+                <input type="file" id="profile-picture" name="profilePicture" required>
+            </div>
+            <div class="input-box">
+                <label for="skills">Skills:</label>
+                <textarea id="skills" name="skills" placeholder="Add your skills" required></textarea>
+            </div>
+            <div class="input-box">
+                <label for="expertise">Expertise:</label>
+                <textarea id="expertise" name="expertise" placeholder="Add your expertise" required></textarea>
+            </div>
+            <button type="submit">Complete Profile</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 My Portfolio</p>
+    </footer>
+
+    <script>
+        document.getElementById('profile-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+        
+            let formData = new FormData(this);
+            let userId = document.getElementById('userId').value; 
+            let data = {
+                userId: userId,
+                profilePicture: formData.get('profilePicture'),
+                skills: formData.get('skills'),
+                expertise: formData.get('expertise')
+            };
+        
+            fetch("http://localhost:3000/store-profile", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message === 'Profile data stored successfully') {
+                    console.log("Profile data stored successfully");
+                    window.location.href = "profile_page.html";
+                } else {
+                    console.error("Failed to store profile data");
+                }
+            })
+            .catch(err => {
+                console.error("Error:", err);
+            });
+        });
+        
+    </script>
+</body>
+</html>
