@@ -2,120 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Portfolio</title>
+    <title>User Profile</title>
     <link rel="stylesheet" href="profile_style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <header>
-        <h2 class="logo">IDEALINK</h2>
-        <nav class="navigation">
-            <a href="#home">Home</a>
-            <a href="#about">About</a>
-            <a href="#projects">Projects</a>
-            <a href="#contact">Contact</a>
-            <a href="#admin">Admin</a>
-        </nav>
-    </header>
+    <div class="form-box">
+        <h1>User Profile</h1>
 
-    <section class="profile-completion" id="profile-completion">
-        <h2>Complete Your Profile</h2>
-        <form action="#" id="profile-form">
-            <input type="hidden" id="userId" name="userId">
-    
-            <div class="input-box">
-                <label for="profile-picture">Upload Profile Picture:</label>
-                <input type="file" id="profile-picture" name="profilePicture" required>
-            </div>
-            
-            <div id="product-images">
-                <div class="product-image">
-                    <label for="product-image">Upload Product Image:</label>
-                    <input type="file" name="productImage" required>
-                    <label for="product-caption">Caption:</label>
-                    <input type="text" name="productCaption" placeholder="Enter caption for the product" required>
-                </div>
-            </div>
-            
-            <button type="button" id="add-product-image">Add Another Product</button>
-            
-            <div class="input-box">
-                <label for="skills">Skills:</label>
-                <textarea id="skills" name="skills" placeholder="Add your skills" required></textarea>
-            </div>
-            <div class="input-box">
-                <label for="expertise">Expertise:</label>
-                <textarea id="expertise" name="expertise" placeholder="Add your expertise" required></textarea>
-            </div>
-            <button type="submit">Complete Profile</button>
-        </form>
-    </section>
+        <h2>Profile Picture</h2>
+        <input type="file" id="profile-picture-input" class="input-box">
+        <img id="profile-picture" src="#" alt="Profile Picture" width="200">
 
-    <footer>
-        <p>&copy; 2024 My Portfolio</p>
-    </footer>
+        <h2>Products</h2>
+        <div class="input-box">
+            <input type="file" id="product-image-input">
+            <input type="text" id="product-caption-input" placeholder="Caption">
+        </div>
+        <button onclick="addProduct()">Add Product</button>
+        <div id="product-list"></div>
 
-    <script>
-        document.getElementById('profile-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-        
-            try {
-                let userId = await fetchUserId();
-        
-                document.getElementById('userId').value = userId;
-        
-                let formData = new FormData(this);
-        
-                let response = await fetch("http://localhost:3000/store-profile", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${localStorage.getItem('token')}`,
-                    },
-                    body: formData,
-                });
-        
-                let responseData = await response.json();
-        
-                if (responseData.message === 'Profile data stored successfully') {
-                    console.log("Profile data stored successfully");
-                    window.location.href = "profile_page.html";
-                } else {
-                    console.error("Failed to store profile data");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-            }
-        });
-        
-        document.getElementById('add-product-image').addEventListener('click', function() {
-            const productImageDiv = document.createElement('div');
-            productImageDiv.className = 'product-image';
-            productImageDiv.innerHTML = `
-                <label for="product-image">Upload Product Image:</label>
-                <input type="file" name="productImage" required>
-                <label for="product-caption">Caption:</label>
-                <input type="text" name="productCaption" placeholder="Enter caption for the product" required>
-            `;
-            
-            document.getElementById('product-images').appendChild(productImageDiv);
-        });
+        <h2>Skills</h2>
+        <textarea id="skills-input" placeholder="Enter skills" class="input-box"></textarea>
 
-        async function fetchUserId() {
-            try {
-                let token = localStorage.getItem('token'); 
-                let response = await fetch("http://localhost:3000/get-userId", {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                let data = await response.json();
-                return data.userId;
-            } catch (error) {
-                console.error("Error fetching userId:", error);
-                throw error;
-            }
-        }
-    </script>
+        <h2>Expertise</h2>
+        <textarea id="expertise-input" placeholder="Enter expertise" class="input-box"></textarea>
+
+        <button onclick="saveProfile()">Save Profile</button>
+    </div>
+
+    <script src="profile.js"></script>
 </body>
 </html>
