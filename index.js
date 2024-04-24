@@ -2,18 +2,31 @@ const express = require("express");
 const mongoose = require("mongoose");
 var cors = require("cors"); 
 const jwt=require('jsonwebtoken');
-const fileupload=require('express-fileupload');
-const cloudinary=require('cloudinary').v2;
-          
-cloudinary.config({ 
-  cloud_name: 'dqqq2yixd', 
-  api_key: '118828381467524', 
-  api_secret: 'Dv7-q6IfNcKYTGbtdwxROh4NTsk' 
+const multer=require('multer');
+const path = require('path'); 
+const fs = require('fs');
+require('dotenv').config();
+
+const uploadDir = path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); 
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname); 
+  }
 });
+
+const upload = multer({ storage: storage });
 
 const app = express();
 const port = 3000;
-
+          
 
 mongoose
   .connect("mongodb://localhost:27017/UserDB")
@@ -25,16 +38,17 @@ mongoose
   });
 
 
-const userSchema = new mongoose.Schema({
-  username: String,
-  email: String,
-  password: String,
-}, { collection: 'users' });
+  const userSchema = new mongoose.Schema({
+    username: String,
+    email: String,
+    password: String,
+  }, { collection: 'users' });
+  
 const User = mongoose.model("User", userSchema);
 
 const generateAuthToken = (userId) => {
   try {
-    const token = jwt.sign({ _id: userId }, 'thisisthesecuritytokengeneratedbyme');
+    const token = jwt.sign({ _id: userId }, process.env.SECRET_KEY);
     return token;
   } catch (error) {
     throw error;
@@ -48,16 +62,18 @@ const profileSchema = new mongoose.Schema({
     required: true
   },
   profilePicture: String,
+  productImages: [{
+    image: String,
+    caption: String
+  }],
   skills: String,
   expertise: String
 }, { collection: 'profiles' });
 
 const Profile = mongoose.model('Profile', profileSchema);
 
+
 app.use(express.json());
-app.use(fileupload({
-  useTempFiles:true,
-}));
 app.use(cors());
 
 app.post("/register", async(req, res) => {
@@ -75,7 +91,7 @@ app.post("/register", async(req, res) => {
       const token = generateAuthToken(user._id);
       console.log("Token:", token);
 
-      return res.status(201).json({ userId: user._id, message: `${userData.username} added` });
+      return res.status(201).json({ token: generateAuthToken(user._id), userId: user._id, message: `${userData.username} added` });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Internal Server Error" });
@@ -83,62 +99,22 @@ app.post("/register", async(req, res) => {
   }
 });
 
-app.get("/get-userId", (req, res) => {
-  const token = req.headers.authorization;
-
-  if (!token) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
+app.post('/upload', upload.single('file'), (req, res) => {
   try {
-    const decodedToken = jwt.verify(token.split(" ")[1], 'thisisthesecuritytokengeneratedbyme');
-    const userId = decodedToken._id;
+      const file = req.file;
+      if (!file) {
+          return res.status(400).json({ message: 'No file uploaded' });
+      }
 
-    return res.status(200).json({ userId: userId });
+      const filePath = path.join(uploadDir, file.filename);
+
+      res.status(200).json({ imageUrl: `http://localhost:3000/uploads/${file.filename}` });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    return res.status(500).json({ message: "Internal Server Error" });
+      console.error('Error uploading file:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
-// app.post('/store-profile', fileupload.single('profilePicture'), async (req, res) => {
-//   try {
-//     const profileData = req.body;
-//     const profileImage = req.file;
-
-//     if (!profileData.userId) {
-//       return res.status(400).json({ message: "userId is required" });
-//     }
-
-//     if (!profileImage) {
-//       return res.status(400).json({ message: "Profile picture is required" });
-//     }
-
-//     const result = await cloudinary.uploader.upload(profileImage.tempFilePath, {
-//       folder: 'profile-pictures',
-//       width: 250,
-//       height: 250,
-//       crop: 'fill'
-//     });
-
-//     const updatedProfile = {
-//       profilePicture: result.secure_url,
-//       skills: profileData.skills,
-//       expertise: profileData.expertise
-//     };
-
-//     await Profile.findOneAndUpdate({ userId: profileData.userId }, updatedProfile);
-
-//     res.status(200).json({ message: 'Profile data stored successfully', profile: updatedProfile });
-
-//   } catch (err) {
-//     console.error("Error storing profile data:", err);
-//     res.status(500).json({ message: 'Failed to store profile data', error: err });
-//   }
-// });
 
 app.post("/login", async (req, res) => {
   try {
@@ -158,13 +134,17 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Token is required" });
     }
 
-    const decodedToken = jwt.verify(token, 'thisisthesecuritytokengeneratedbyme');
+    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
 
     console.log("Decoded token:", decodedToken);
 
     if (!decodedToken) {
       return res.status(401).json({ message: "Invalid token" });
     }
+    res.cookie('token', token, {
+      httpOnly: true,
+
+    });
 
     return res.status(200).json({ userId: user._id, message: "Login successful" });
 
@@ -187,6 +167,34 @@ app.post("/email_check", async (req, res) => {
   } catch (err) {
     console.log("Error:", err);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.post('/store-profile', upload.single('profilePicture'), async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    const profilePicture = req.file.path;
+    const productImages = req.body.productImages.map(image => ({
+      image: image.path,
+      caption: image.caption
+    }));
+    const skills = req.body.skills;
+    const expertise = req.body.expertise;
+
+    const profileData = {
+      userId: userId,
+      profilePicture: profilePicture,
+      productImages: productImages,
+      skills: skills,
+      expertise: expertise
+    };
+
+    await Profile.create(profileData);
+
+    res.status(200).json({ message: 'Profile data stored successfully' });
+  } catch (err) {
+    console.error('Error saving profile:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
