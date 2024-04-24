@@ -5,7 +5,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
-    color: wheat;
+    color: white;
 }
 
 body {
@@ -18,208 +18,53 @@ body {
     background-position: center;
 }
 
-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 20px 100px;
-    display: flex;
-    color: white;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 99;
+.form-box {
+    width: 80%; 
+    max-width: 500px; 
+    padding: 40px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, .5);
 }
 
-.logo {
-    font-size: 3em;
-    color: white;
-    user-select: none;
-}
-
-.navigation a {
-    position: relative;
-    font-size: 1.1em;
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    margin-left: 40px;
-    justify-content: center;
-    flex-grow: 1;
-}
-
-.navigation a[href="email_otp.html"] {
-    color: #FF4500;
-}
-
-.navigation a.register-link {
-    color: #4169E1;
-}
-
-.navigation a::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -6px;
-    width: 100%;
-    height: 3px;
-    background: white;
-    border-radius: 5px;
-    transform-origin: right;
-    transform: scaleX(0);
-    transition: transform .5s;
-}
-
-.navigation a:hover::after {
-    transform: scale(1);
-}
-
-.navigation .btnLogin-popup {
-    width: 130px;
-    height: 50px;
-    background: transparent;
-    border: 2px solid white;
-    outline: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.1em;
-    color: white;
-    font-weight: 500;
-    margin-left: 40px;
-    transition: .5s;
-}
-
-.navigation .btnLogin-popup:hover {
-    background: wheat;
-    color: #162937;
-}
-
-.profile-completion {
-    margin: 2rem auto;
-    max-width: 600px;
-    padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.profile-completion h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: white;
-}
-
-.input-box {
-    position: relative;
-    width: 100%;
-    margin: 30px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.input-box label {
-    position: absolute;
-    top: -20px;
-    left: 0;
-    color: wheat;
-    font-size: 0.9em;
-    pointer-events: none;
-    transition: .3s;
-}
-
-.input-box input,
-.input-box textarea {
-    width: 500px;
-    height: 50px;
-    border: 2px solid wheat;
-    background-color: transparent;
-    color: white;
-    font-size: 1em;
-    padding: 10px;
-    outline: none;
-    border-radius: 6px;
-}
-
-.input-box textarea {
-    height: 50px;
-    resize: vertical;
-}
-
-.input-box::placeholder {
-    color: white;
-    opacity: 0.7;
-}
-
-#product-images {
-    width: 100%;
-    margin-top: 20px;
-}
-
-.product-image {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+h1, h2 {
+    text-align: center;
     margin-bottom: 20px;
 }
 
-.product-image label {
-    margin-top: 10px;
-}
-
-#add-product-image {
+.input-box {
     width: 100%;
-    height: 50px;
-    background: transparent;
-    border: 2px solid white;
-    outline: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.1em;
-    color: bisque;
-    font-weight: 500;
-    margin-top: 20px;
-    transition: .5s;
+    height: 40px; 
+    border-bottom: 2px solid wheat;
+    margin-bottom: 20px;
+    padding: 10px;
 }
 
-#add-product-image:hover {
-    background: white;
-    color: #162937;
-}
-
-footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 10px 0;
-    position: fixed;
-    bottom: 0;
+textarea {
     width: 100%;
-}
-
-.input-box input:focus,
-.input-box textarea:focus {
-    border-color: white;
-}
-
-button[type="submit"] {
-    width: 100%;
-    height: 50px;
-    background: transparent;
-    border: 2px solid white;
-    outline: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.1em;
-    color: bisque;
-    font-weight: 500;
-    transition: .5s;
-}
-
-button[type="submit"]:hover {
-    background: white;
-    color: #162937;
-}
-.product-image.input[type=text]{
+    height: 100px; 
+    border: 2px solid wheat;
     background-color: transparent;
+    resize: vertical;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+button {
+    width: 100%;
+    height: 35px; 
+    background: transparent;
+    border: 2px solid white;
+    outline: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    color: bisque;
+    font-weight: 500;
+    transition: .5s;
+}
+
+button:hover {
+    background: white;
+    color: #162937;
 }
