@@ -5,60 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link rel="stylesheet" href="profile_page.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <h2 class="logo">IDEALINK</h2>
-        <nav class="navigation">
-            <a href="#home">Home</a>
-            <a href="#about">About</a>
-            <a href="#projects">Projects</a>
-            <a href="#contact">Contact</a>
-            <a href="#admin">Admin</a>
-            <button id="logout-btn" onclick="window.location.href='login_update.html'">Log out</button>
-        </nav>
-    </header>
-
-    <section class="user-profile" id="user-profile">
-        <h2>User Profile</h2>
+    <div class="profile-container">
+        <h1>User Profile</h1>
         <div class="profile-details">
-            <div class="profile-picture">
-                <img id="profile-picture" src="" alt="Profile Picture">
-            </div>
-            <div class="profile-info">
-                <h3>Skills:</h3>
-                <p id="skills"></p>
-                <h3>Expertise:</h3>
-                <p id="expertise"></p>
+            <div><strong>Username:</strong> <span id="profile-username"></span></div>
+            <div><strong>Email:</strong> <span id="profile-email"></span></div>
+            <div><strong>Skills:</strong> <span id="profile-skills"></span></div>
+            <div><strong>Expertise:</strong> <span id="profile-expertise"></span></div>
+            <div><strong>Profile Picture:</strong> <img id="profile-picture" src="" alt="Profile Picture"></div>
+            <div><strong>Product Images:</strong></div>
+            <div id="product-images" class="product-images"></div>
+            <div>
+                <label for="image-upload">Upload More Product Images:</label>
+                <input type="file" id="image-upload" accept="image/*" multiple>
             </div>
         </div>
-    </section>
+    </div>
 
-    <footer>
-        <p>&copy; 2024 IDEALINK</p>
-    </footer>
-
-    <script>
-        fetch("http://localhost:3000/get-profile", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data) {
-                document.getElementById('profile-picture').src = data.profilePicture;
-                document.getElementById('skills').textContent = data.skills;
-                document.getElementById('expertise').textContent = data.expertise;
-            } else {
-                console.error("Failed to fetch profile data");
-            }
-        })
-        .catch(err => {
-            console.error("Error:", err);
-        });
-    </script>
+    <script src="main.js"></script>
 </body>
 </html>
