@@ -1,16 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
-
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
-    color: wheat;
+    color: white;
 }
 
 body {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
     min-height: 100vh;
     background: url(back.png) no-repeat;
@@ -18,137 +16,68 @@ body {
     background-position: center;
 }
 
-header {
-    width: 100%;
-    padding: 20px 100px;
-    display: flex;
-    color: white;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 99;
+.profile-container {
+    width: 80%;
+    max-width: 600px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
-.logo {
-    font-size: 3em;
-    color: white;
-    user-select: none;
-}
-
-.navigation a {
-    font-size: 1.1em;
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    margin-left: 40px;
-    justify-content: center;
-    transition: color 0.3s ease;
-}
-
-.navigation a[href="email_otp.html"] {
-    color: #FF4500;
-}
-
-.navigation a.register-link {
-    color: #4169E1;
-}
-
-.navigation a:hover {
-    color: wheat; 
+.profile-container h1 {
+    font-size: 2.5em;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .profile-details {
+    padding: 20px;
+}
+
+.profile-details div {
+    margin-bottom: 15px;
+}
+
+.profile-details div strong {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.profile-details span {
+    font-size: 1.2em;
+}
+
+#profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    object-fit: cover;
+    border: 3px solid white;
+}
+
+.product-images {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 50px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px;
 }
 
-.profile-picture {
-    margin-right: 20px;
+.product-images img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 10px;
 }
 
-.profile-info {
-    display: flex;
-    flex-direction: column;
+#image-upload {
+    margin-top: 10px;
 }
 
-.input-box {
-    position: relative;
-    width: 100%;
-    margin: 30px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.input-box label {
-    position: absolute;
-    top: -20px;
-    left: 0;
-    color: wheat;
-    font-size: 0.9em;
-    pointer-events: none;
-    transition: .3s;
-}
-
-.input-box input,
-.input-box textarea {
-    width: 500px;
-    height: 50px;
-    border: 2px solid wheat;
-    background-color: transparent;
-    color: white;
-    font-size: 1em;
-    padding: 10px;
-    outline: none;
-    border-radius: 6px;
-}
-
-footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 20px 0;
-    width: 100%;
-    margin-top: auto;
-    border-top: 1px solid #555;
-}
-
-footer p {
-    font-size: 0.9em;
-}
-
-button#logout-btn {
-    background-color: transparent;
-    color: white;
-    border: 2px solid white; 
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-button#logout-btn:hover {
-    background-color: wheat;
-    color: white;
-}
-
-button[type="submit"] {
-    width: 100%;
-    height: 50px;
-    background: transparent;
-    border: 2px solid white;
-    outline: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.1em;
-    color: bisque;
-    font-weight: 500;
-    transition: .5s;
-}
-
-button[type="submit"]:hover {
-    background: white;
-    color: #162937;
+#image-upload-label {
+    display: block;
+    margin-top: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
 }
