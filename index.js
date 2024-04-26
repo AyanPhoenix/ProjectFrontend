@@ -5,6 +5,7 @@ const jwt=require('jsonwebtoken');
 const multer=require('multer');
 const path = require('path'); 
 const fs = require('fs');
+const cookieparser=require('cookie-parser');
 require('dotenv').config();
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -42,11 +43,17 @@ mongoose
     username: String,
     email: String,
     password: String,
+    tokens:[{
+      token:{
+        type:String,
+        required:true,
+      }
+    }]
   }, { collection: 'users' });
   
 const User = mongoose.model("User", userSchema);
 
-const generateAuthToken = (userId) => {
+const generateAuthToken = async(userId) => {
   try {
     const token = jwt.sign({ _id: userId }, process.env.SECRET_KEY);
     return token;
@@ -75,6 +82,7 @@ const Profile = mongoose.model('Profile', profileSchema);
 
 app.use(express.json());
 app.use(cors());
+app.use(cookieparser());
 
 app.post("/register", async(req, res) => {
   const userData = req.body;
@@ -90,6 +98,10 @@ app.post("/register", async(req, res) => {
       const user = await User.create(userData);
       const token = generateAuthToken(user._id);
       console.log("Token:", token);
+      res.cookie("jwt",token ,{
+        expires:new Date(Date.now()+30000),
+        httpOnly:true,
+      });
 
       return res.status(201).json({ token: generateAuthToken(user._id), userId: user._id, message: `${userData.username} added` });
     } catch (err) {
@@ -101,20 +113,19 @@ app.post("/register", async(req, res) => {
 
 app.post('/upload', upload.single('file'), (req, res) => {
   try {
-      const file = req.file;
-      if (!file) {
-          return res.status(400).json({ message: 'No file uploaded' });
-      }
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
 
-      const filePath = path.join(uploadDir, file.filename);
+    const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
 
-      res.status(200).json({ imageUrl: `http://localhost:3000/uploads/${file.filename}` });
+    res.status(200).json({ imageUrl: fileUrl });
   } catch (error) {
-      console.error('Error uploading file:', error);
-      res.status(500).json({ message: 'Internal Server Error' });
+    console.error('Error uploading file:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-
 
 app.post("/login", async (req, res) => {
   try {
@@ -126,7 +137,7 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid login credentials!!!" });
     }
 
-    const token = generateAuthToken(user._id);
+    const token = jwt.sign({ _id: user._id }, process.env.SECRET_KEY);
 
     console.log("Received token:", token);
 
@@ -134,14 +145,14 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Token is required" });
     }
 
-    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+    const decodedToken = jwt.verify(token, 'thisisthesecuritytokengeneratedbyme');
 
     console.log("Decoded token:", decodedToken);
 
     if (!decodedToken) {
       return res.status(401).json({ message: "Invalid token" });
     }
-    res.cookie('token', token, {
+    res.cookie('jwt', token, {
       httpOnly: true,
 
     });
@@ -172,29 +183,33 @@ app.post("/email_check", async (req, res) => {
 
 app.post('/store-profile', upload.single('profilePicture'), async (req, res) => {
   try {
-    const userId = req.body.userId;
-    const profilePicture = req.file.path;
-    const productImages = req.body.productImages.map(image => ({
-      image: image.path,
-      caption: image.caption
-    }));
-    const skills = req.body.skills;
-    const expertise = req.body.expertise;
+      const token = req.cookies.token; 
+      const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+      
+      if (!decodedToken) {
+          return res.status(401).json({ success: false, message: "Invalid token" });
+      }
 
-    const profileData = {
-      userId: userId,
-      profilePicture: profilePicture,
-      productImages: productImages,
-      skills: skills,
-      expertise: expertise
-    };
+      const userId = decodedToken._id;
+      const profilePicture = req.file ? req.file.path : null;
+      const productImages = req.body.productImages ? JSON.parse(req.body.productImages) : [];
+      const skills = req.body.skills;
+      const expertise = req.body.expertise;
 
-    await Profile.create(profileData);
+      const profileData = {
+          userId: userId,
+          profilePicture: profilePicture,
+          productImages: productImages,
+          skills: skills,
+          expertise: expertise
+      };
 
-    res.status(200).json({ message: 'Profile data stored successfully' });
+      await Profile.create(profileData);
+
+      res.status(200).json({ success: true, message: 'Profile data stored successfully' });
   } catch (err) {
-    console.error('Error saving profile:', err);
-    res.status(500).json({ message: 'Internal Server Error' });
+      console.error('Error saving profile:', err);
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
 
