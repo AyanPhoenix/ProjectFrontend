@@ -20,16 +20,28 @@
     </header>
     <style>
        input[type=text]{
-        background-color: white;
-        color: black;
+        border-radius: 6px;
+        border-color: wheat;
+        background-color: transparent;
+        color: white;
+        height: 30px;
+        width: 200px;
       }
       input[type=password]{
-        background-color: white;
-        color: black;
+        border-radius: 6px;
+        border-color: wheat;
+        background-color: transparent;
+        color: white;
+        height: 30px;
+        width: 200px;
       }
       input[type=email]{
-        background-color: white;
-        color: black;
+        border-radius: 6px;
+        border-color: wheat;
+        background-color: transparent ;
+        color: white;
+        height: 30px;
+        width: 200px;
       }
     </style>
 
@@ -52,9 +64,9 @@
           </div>
           <div class="remember-forgot">
             <input type="checkbox" value="lsRememberMe" id="rememberme" ><label for="rememberme">Remember me</label> 
-            <a href="email_otp.html" >Forgot Password</a>
+            &nbsp;&nbsp;&nbsp;&nbsp;<a href="email_otp.html" >Forgot Password</a><br><br>
           </div>
-          <button type="submit" class="btn" value="login" onclick="lsRememberMe()">LOGIN</button>
+          <button type="submit" class="btn" value="login" onclick="lsRememberMe()">LOGIN</button> <br> <br>
           <div class="login-register">
             <p>
               Don't have an account?
@@ -83,14 +95,13 @@
             <label>Password</label>
             <div id="pass_err"></div>
           </div>
-          <p id="result"></p>
+          <p id="result"></p><br>
           <div class="remember-forgot">
             <label
               ><input type="checkbox" id="agreecon" required /> I agree to the
-              conditions</label
-            >
+              conditions</label> <br><br>
           </div>
-          <button type="submit" class="btn" id="regbtn">REGISTER</button>
+          <button type="submit" class="btn" id="regbtn">REGISTER</button><br><br>
           <div class="login-register">
             <p>
               Already have an account?
@@ -164,7 +175,7 @@
                 .then((res) => {
                   if (res.ok) {
                     console.log("Connection Successful");
-                    window.location.href = "complete-profile.html";
+                    return res.json();
                   }else if(res.status===401){
                     alert("User already exists");
                   }else if(res.status===400){
@@ -175,6 +186,14 @@
                    else {
                     console.error("Error:", res.statusText);
                   }
+                }).then((data)=>{
+                  const cookieString = document.cookie;
+                  const tokenMatch = cookieString.match(/jwt=([^;]*)/);
+                  if (tokenMatch && tokenMatch.length>1) {
+                    const token = tokenMatch[1];
+                    localStorage.setItem('token', token);
+                  }
+                  window.location.href = "complete-profile.html";
                 })
                 .catch((err) => console.error(err));
             }  
