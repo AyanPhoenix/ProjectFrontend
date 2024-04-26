@@ -110,16 +110,16 @@ app.post("/register", async (req, res) => {
         httpOnly: true,
       });
 
-      return res
-        .status(201)
-        .json({
-          token: generateAuthToken(user._id),
-          userId: user._id,
-          message: `${userData.username} added`,
-        });
+      return res.status(201).json({
+        token: generateAuthToken(user._id),
+        userId: user._id,
+        message: `${userData.username} added`,
+      });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ message: "Internal Server Error" });
+      return res
+        .status(500)
+        .json({ error: err, message: "Internal Server Error" });
     }
   }
 });
@@ -131,12 +131,12 @@ app.post("/upload", upload.single("file"), (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
+    // const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
 
-    res.status(200).json({ imageUrl: fileUrl });
+    res.status(200).json({ imageUrl: file.path });
   } catch (error) {
     console.error("Error uploading file:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ error: err, message: "Internal Server Error" });
   }
 });
 
@@ -168,16 +168,18 @@ app.post("/login", async (req, res) => {
     if (!decodedToken) {
       return res.status(401).json({ message: "Invalid token" });
     }
-    res.cookie("jwt", token, {
-      httpOnly: true,
-    });
+    // res.cookie("jwt", token, {
+    //   httpOnly: true,
+    // });
 
     return res
       .status(200)
-      .json({ userId: user._id, message: "Login successful" });
+      .json({ token: token, userId: user._id, message: "Login successful" });
   } catch (err) {
     console.error("Error:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ error: err, message: "Internal server error" });
   }
 });
 
@@ -193,7 +195,7 @@ app.post("/email_check", async (req, res) => {
     }
   } catch (err) {
     console.log("Error:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ error: err, message: "Internal Server Error" });
   }
 });
 
@@ -202,8 +204,9 @@ app.post(
   upload.single("profilePicture"),
   async (req, res) => {
     try {
-      const token = req.cookies.token;
+      const token = req.headers.authorization.slice(7);
       const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+      console.log(decodedToken);
 
       if (!decodedToken) {
         return res
@@ -234,9 +237,11 @@ app.post(
         .json({ success: true, message: "Profile data stored successfully" });
     } catch (err) {
       console.error("Error saving profile:", err);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+      res.status(500).json({
+        success: false,
+        error: err,
+        message: "Internal Server Error" + err,
+      });
     }
   }
 );
@@ -265,8 +270,21 @@ app.post("/modify", async (req, res) => {
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
     console.error("Error:", err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ error: err, message: "Internal Server Error" });
   }
+});
+
+app.get("/profile", async (req, res) => {
+  const token = req.headers.authorization.slice(7);
+  if (!token)
+    res.status(400).json({ error: true, message: "You're not logged in." });
+  const userId = jwt.verify(token, process.env.SECRET_KEY);
+  const userProfile = await Profile.findOne({ userId: userId }).populate(
+    "userId"
+  );
+  res.json(userProfile);
 });
 
 app.listen(port, () => {

@@ -230,8 +230,6 @@
             })
             .then((data) => {
               const cookieString = data.token;
-              console.log("Data ", data);
-              console.log("cookie ", cookieString);
               if (cookieString) {
                 localStorage.setItem("token", cookieString);
               }
@@ -261,13 +259,19 @@
           .then((res) => {
             if (res.ok) {
               console.log("Login Successful!!!");
-              window.open("profile_page.html");
+              return res.json();
             } else {
               console.error("Error:", res.statusText);
               alert("Invalid credentials");
             }
           })
-          .catch((err) => console.error(err));
+          .then((data) => {
+            if (data.token) {
+              localStorage.setItem("token", data.token);
+            }
+            location.href = "profile_page.html";
+          })
+          .catch((err) => console.log(err));
       }
     </script>
   </body>
