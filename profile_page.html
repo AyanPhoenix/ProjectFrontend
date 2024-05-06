@@ -7,23 +7,144 @@
     <link rel="stylesheet" href="profile_page.css">
 </head>
 <body>
+    <form id="logout-form" action="/logout" method="GET">
+        <button type="submit" id="log-out">Log Out</button>
+    </form>
     <div class="profile-container">
-        <h1>User Profile</h1>
+        <h1>Welcome <span id="profile-username"></span></h1>
         <div class="profile-details">
-            <div><strong>Username:</strong> <span id="profile-username"></span></div>
+            <div><strong>Profile Picture:</strong> <img id="profile-picture" src="" alt="Profile Picture"></div>
+            <!--<div><strong>Username:</strong><span id="profile-username"></span></div>-->
             <div><strong>Email:</strong> <span id="profile-email"></span></div>
             <div><strong>Skills:</strong> <span id="profile-skills"></span></div>
             <div><strong>Expertise:</strong> <span id="profile-expertise"></span></div>
-            <div><strong>Profile Picture:</strong> <img id="profile-picture" src="" alt="Profile Picture"></div>
             <div><strong>Product Images:</strong></div>
             <div id="product-images" class="product-images"></div>
-            <div>
-                <label for="image-upload">Upload More Product Images:</label>
-                <input type="file" id="image-upload" accept="image/*" multiple>
+            <div id="product-list"></div>
+            <div id="image-upload">
+                <label id="image-upload-label" for="product-image-input">Add Product Image:</label>
+                <input type="file" id="product-image-input">
+                <input type="text" id="product-caption-input" placeholder="Caption">
+                <button onclick="addProduct()">Add Product</button>
+            </div>
+            <div id="search-bar">
+                <input type="text" id="search-input" placeholder="Search by caption">
+                <button onclick="searchProfile()">Search</button>
+            </div>
+            <div class="search-results" style="display: none;">
+                <h1>Search Results</h1>
+                <div id="search-results-container" class="results-container"></div>
+                 <span id="error"></span>
             </div>
         </div>
     </div>
-
     <script src="main.js"></script>
+    <script>
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch("http://localhost:3000/logout",{
+                    method:'GET',
+                    headers:{
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Logout failed');
+                    console.log('Log out failed');
+                }
+                if(response.status===200){
+                    window.close();
+                    alert("Log out sucessfully");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        async function searchProfile() {
+            try {
+                const searchInput = document.getElementById('search-input').value;
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch(`http://localhost:3000/search?caption=${searchInput}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Search failed');
+                }
+                document.querySelector('.search-results').style.display = "block";
+                const searchData = await response.json();
+                console.log('Search data:', searchData);
+                const searchResultsContainer = document.getElementById('search-results-container');
+                searchResultsContainer.innerHTML = ''; 
+        
+                if (searchData.profiles && Array.isArray(searchData.profiles) && searchData.users && Array.isArray(searchData.users)) {
+                    searchData.profiles.forEach(profile => {
+                        const profileElement = document.createElement('div');
+                        profileElement.classList.add('profile');
+        
+                        const profilePicture = document.createElement('img');
+                        profilePicture.src = profile.profilePicture;
+                        profilePicture.width = 70; 
+                        profilePicture.height = 70;
+                        profileElement.appendChild(profilePicture);
+        
+                        const productImagesContainer = document.createElement('div');
+                        productImagesContainer.classList.add('product-images-container');
+                        profile.productImages.forEach(image => {
+                            const productImage = document.createElement('img');
+                            productImage.src = image.image;
+                            productImage.width = 70; 
+                            productImage.height = 70; 
+                            productImagesContainer.appendChild(productImage);
+                        });
+                        profileElement.appendChild(productImagesContainer);
+        
+                        const productImages = document.createElement('p');
+                        productImages.textContent = `Product Images: ${profile.productImages.map(image => image.caption).join(', ')}`;
+                        profileElement.appendChild(productImages);
+        
+                        searchResultsContainer.appendChild(profileElement);
+                    });
+        
+                    searchData.users.forEach(user => {
+                        const userElement = document.createElement('div');
+                        userElement.classList.add('user');
+        
+                        const username = document.createElement('p');
+                        username.textContent = `Username: ${user.username}`;
+                        userElement.appendChild(username);
+        
+                        const email = document.createElement('p');
+                        email.textContent = `Email: ${user.email}`;
+                        userElement.appendChild(email);
+        
+                        searchResultsContainer.appendChild(userElement);
+                    });
+                }else if(res.status===401){
+                    const errorMessageSpan = document.getElementById('error-message');
+                    errorMessageSpan.textContent = res.statusText;
+                }
+                 else {
+                    console.error('Profiles data is not available or not an array:', searchData);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }                
+            
+        document.getElementById("log-out").addEventListener("click", async(event) => {
+            event.preventDefault();
+            await logout();
+        });
+    </script>
 </body>
 </html>
