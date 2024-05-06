@@ -42,7 +42,7 @@ h1, h2 {
 
 textarea {
     width: 100%;
-    height: 100px; 
+    height: 40px; 
     border: 2px solid wheat;
     background-color: transparent;
     resize: vertical;
@@ -67,4 +67,13 @@ button {
 button:hover {
     background: white;
     color: #162937;
+}
+#product-caption-input {
+    width: 100%;
+    height: 40px; 
+    border-bottom: 2px solid wheat;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: transparent; 
+    color: white; 
 }
