@@ -6,6 +6,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const cookieparser = require("cookie-parser");
+const { profile, error } = require("console");
 require("dotenv").config();
 
 const uploadDir = path.join(__dirname, "uploads");
@@ -130,9 +131,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
-
-    // const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
-
     res.status(200).json({ imageUrl: file.path });
   } catch (error) {
     console.error("Error uploading file:", error);
@@ -158,10 +156,7 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Token is required" });
     }
 
-    const decodedToken = jwt.verify(
-      token,
-      "thisisthesecuritytokengeneratedbyme"
-    );
+    const decodedToken = jwt.verify(token,"thisisthesecuritytokengeneratedbyme");
 
     console.log("Decoded token:", decodedToken);
 
@@ -172,14 +167,10 @@ app.post("/login", async (req, res) => {
     //   httpOnly: true,
     // });
 
-    return res
-      .status(200)
-      .json({ token: token, userId: user._id, message: "Login successful" });
+    return res.status(200).json({ token: token, userId: user._id, message: "Login successful" });
   } catch (err) {
     console.error("Error:", err);
-    return res
-      .status(500)
-      .json({ error: err, message: "Internal server error" });
+    return res .status(500).json({ error: err, message: "Internal server error" });
   }
 });
 
@@ -199,28 +190,27 @@ app.post("/email_check", async (req, res) => {
   }
 });
 
-app.post(
-  "/store-profile",
-  upload.single("profilePicture"),
-  async (req, res) => {
+app.post( "/store-profile", upload.single("profilePicture"),async (req, res) => {
     try {
       const token = req.headers.authorization.slice(7);
       const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
       console.log(decodedToken);
 
       if (!decodedToken) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Invalid token" });
+        return res.status(401).json({ success: false, message: "Invalid token" });
       }
 
       const userId = decodedToken._id;
       const profilePicture = req.file ? req.file.path : null;
-      const productImages = req.body.productImages
-        ? JSON.parse(req.body.productImages)
-        : [];
+      let productImages = req.body.productImages? JSON.parse(req.body.productImages): [];
       const skills = req.body.skills;
       const expertise = req.body.expertise;
+      productImages = productImages.map(product => ({
+        image: product.image,
+        caption: product.caption
+      }));
+
+      console.log(`Product Images:${productImages}`);
 
       const profileData = {
         userId: userId,
@@ -232,9 +222,7 @@ app.post(
 
       await Profile.create(profileData);
 
-      res
-        .status(200)
-        .json({ success: true, message: "Profile data stored successfully" });
+      res.status(200).json({ success: true, message: "Profile data stored successfully" });
     } catch (err) {
       console.error("Error saving profile:", err);
       res.status(500).json({
@@ -245,6 +233,94 @@ app.post(
     }
   }
 );
+app.post("/store-product",upload.single("product-image-input") ,async (req, res) => {
+  try {
+    const token = req.headers.authorization.slice(7);
+    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+
+    if (!decodedToken) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userId = decodedToken._id;
+    console.log(req.body);
+
+    const productImages = req.body.productImages || [];
+    const captions = req.body.captions || [];
+
+    const products = productImages.map((image, index) => ({
+      image,
+      caption: captions[index] || ""
+    }));
+    console.log(products);
+
+    const userinfo = await Profile.findOne({ userId });
+
+    if (!userinfo) {
+      console.log(`No user found`);
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    userinfo.productImages.push(...products);
+    await userinfo.save();
+
+    res.status(200).json({ success: true, message: "Product images stored successfully" });
+  } catch (err) {
+    console.error("Error storing product images:", err);
+    res.status(500).json({
+      success: false,
+      error: err,
+      message: "Internal Server Error",
+    });
+  }
+});
+app.get('/logout', function(req, res) {
+  
+  const token = req.headers.authorization.slice(7);
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+  try {
+    res.clearCookie('jwt');  
+    return res.status(200).json({ success: true, message: "Logout successful" });
+  } catch (error) {
+    console.error("Error during logout:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+  
+});
+app.get('/search', async (req, res) => {
+  try {
+      const { caption } = req.query;
+
+      if (!caption) {
+          return res.status(400).json({ error: true, message: "Caption is required for search" });
+      }
+
+      // if(!RegExp(caption)){
+      //   return res.status(401).json({error:true,message:"No product Found"});
+      // }
+
+      const profiles = await Profile.find({ "productImages.caption": { $regex: caption, $options: 'i' } }).populate('userId');
+
+      if (!profiles || profiles.length === 0) {
+          return res.status(404).json({ error: true, message: "No profiles found matching the caption" });
+      }
+
+      const userIds = profiles.map(profile => profile.userId._id);
+
+      const users = await User.find({ _id: { $in: userIds } });
+
+      if (!users || users.length === 0) {
+          return res.status(404).json({ error: true, message: "No users found matching the profiles" });
+      }
+
+      return res.status(200).json({ error: false, profiles, users });
+  } catch (error) {
+      console.error("Error searching profiles:", error);
+      return res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+});
 
 app.post("/modify", async (req, res) => {
   try {
@@ -277,15 +353,53 @@ app.post("/modify", async (req, res) => {
 });
 
 app.get("/profile", async (req, res) => {
-  const token = req.headers.authorization.slice(7);
-  if (!token)
-    res.status(400).json({ error: true, message: "You're not logged in." });
-  const userId = jwt.verify(token, process.env.SECRET_KEY);
-  const userProfile = await Profile.findOne({ userId: userId }).populate(
-    "userId"
-  );
-  res.json(userProfile);
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(400).json({ error: true, message: "You're not logged in." });
+    }
+
+    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+    if (!decodedToken) {
+      return res.status(401).json({ error: true, message: "Invalid token" });
+    }
+
+    const userId = decodedToken._id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: true, message: "User not found" });
+    }
+
+    const userProfile = await Profile.findOne({ userId: userId }).populate("userId");
+
+    if (!userProfile) {
+      return res.status(404).json({ error: true, message: "User profile not found." });
+    }
+
+    const combinedData = {
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+      profile: {
+        _id: userProfile._id,
+        profilePicture: userProfile.profilePicture,
+        productImages: userProfile.productImages,
+        skills: userProfile.skills,
+        expertise: userProfile.expertise,
+      },
+    };
+
+    res.json(combinedData);
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
 });
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
