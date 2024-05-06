@@ -1,53 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>User Profile</title>
-    <link rel="stylesheet" href="profile_style.css" />
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <title>User Profile</title>
+  <link rel="stylesheet" href="profile_style.css">
+</head>
+<body>
+  <div class="form-box">
+    <h1>User Profile</h1>
+    <h2>Profile Picture</h2>
+    <label for="profile-picture-input">Upload Profile Picture:</label>
+    <input type="file" id="profile-picture-input" class="input-box" />
+    <img id="profile-picture" src="#" alt="Profile Picture" />
 
-  <body>
-    <div class="form-box">
-      <h1>User Profile</h1>
-
-      <h2>Profile Picture</h2>
-      <label for="profile-picture-input">Upload Profile Picture:</label>
-      <input type="file" id="profile-picture-input" class="input-box" />
-      <img id="profile-picture" src="#" alt="Profile Picture" />
-
-      <h2>Products</h2>
-      <div class="input-box">
-        <label for="product-image-input">Upload Product Image:</label>
-        <input type="file" id="product-image-input" />
-        <input
-          type="text"
-          id="product-caption-input"
-          placeholder="Caption"
-        />
-      </div>
-      <br /><br />
-      <button onclick="addProduct()">Add Product</button>
-      <div id="product-list"></div>
-
-      <h2>Skills</h2>
-      <label for="skills-input">Enter Skills:</label>
-      <textarea
-        id="skills-input"
-        placeholder="Enter skills"
-        class="input-box"
-      ></textarea>
-
-      <h2>Expertise</h2>
-      <label for="expertise-input">Enter Expertise:</label>
-      <textarea
-        id="expertise-input"
-        placeholder="Enter expertise"
-        class="input-box"
-      ></textarea>
-
-      <button onclick="saveProfile()">Save Profile</button>
+    <h2>Products</h2>
+    <div class="input-box">
+      <label for="product-image-input">Upload Product Image:</label>
+      <input type="file" id="product-image-input" multiple/>
+      <input type="text" id="product-caption-input" placeholder="Caption" multiple/>
     </div>
+    <br /><br />
+    <button onclick="addProduct()">Add Product</button>
+    <div id="product-list"></div>
 
-    <script src="profile.js"></script>
-  </body>
+    <h2>Skills</h2>
+    <label for="skills-input">Enter Skills:</label>
+    <textarea id="skills-input" placeholder="Enter skills" class="input-box"></textarea>
+
+    <h2>Expertise</h2>
+    <label for="expertise-input">Enter Expertise:</label>
+    <textarea id="expertise-input" placeholder="Enter expertise" class="input-box"></textarea>
+
+    <button onclick="saveProfile()">Save Profile</button>
+  </div>
+
+  <script src="profile.js"></script>
+</body>
 </html>
