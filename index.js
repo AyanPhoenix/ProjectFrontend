@@ -5,8 +5,9 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const http = require('http');
+const socketIO = require('socket.io');
 const cookieparser = require("cookie-parser");
-const { profile, error } = require("console");
 require("dotenv").config();
 
 const uploadDir = path.join(__dirname, "uploads");
@@ -28,6 +29,8 @@ const upload = multer({ storage: storage });
 
 const app = express();
 const port = 3000;
+const server = http.createServer(app);
+const io = socketIO(server);
 
 mongoose
   .connect("mongodb://localhost:27017/UserDB")
@@ -148,7 +151,7 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid login credentials!!!" });
     }
 
-    const token = jwt.sign({ _id: user._id }, process.env.SECRET_KEY);
+    const token = jwt.sign({ _id: user._id }, 'thisisthesecuritytokengeneratedbyme');
 
     console.log("Received token:", token);
 
@@ -163,10 +166,7 @@ app.post("/login", async (req, res) => {
     if (!decodedToken) {
       return res.status(401).json({ message: "Invalid token" });
     }
-    // res.cookie("jwt", token, {
-    //   httpOnly: true,
-    // });
-
+   
     return res.status(200).json({ token: token, userId: user._id, message: "Login successful" });
   } catch (err) {
     console.error("Error:", err);
@@ -297,10 +297,6 @@ app.get('/search', async (req, res) => {
           return res.status(400).json({ error: true, message: "Caption is required for search" });
       }
 
-      // if(!RegExp(caption)){
-      //   return res.status(401).json({error:true,message:"No product Found"});
-      // }
-
       const profiles = await Profile.find({ "productImages.caption": { $regex: caption, $options: 'i' } }).populate('userId');
 
       if (!profiles || profiles.length === 0) {
@@ -310,6 +306,7 @@ app.get('/search', async (req, res) => {
       const userIds = profiles.map(profile => profile.userId._id);
 
       const users = await User.find({ _id: { $in: userIds } });
+      
 
       if (!users || users.length === 0) {
           return res.status(404).json({ error: true, message: "No users found matching the profiles" });
@@ -354,12 +351,13 @@ app.post("/modify", async (req, res) => {
 
 app.get("/profile", async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const token =req.headers.authorization?.split(" ")[1];
     if (!token) {
       return res.status(400).json({ error: true, message: "You're not logged in." });
     }
 
     const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+    console.log("profile id:",decodedToken);
     if (!decodedToken) {
       return res.status(401).json({ error: true, message: "Invalid token" });
     }
@@ -399,6 +397,101 @@ app.get("/profile", async (req, res) => {
     res.status(500).json({ error: true, message: "Internal Server Error" });
   }
 });
+
+const messageSchema = new mongoose.Schema({
+  senderId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  recipientId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true
+   },
+  message: {
+     type: String, 
+     required: true
+     },
+  timestamp: { type: Date,
+     default: Date.now
+     }
+});
+
+const Message = mongoose.model('messages', messageSchema);
+
+
+app.post('/sendMessage', async (req, res) => {
+  try {
+    const { recipientId, message } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    if(!token){
+      console.log(`Token not found`);
+    }
+
+    if(!recipientId){
+      console.log(`receipientId is required`);
+      return res.status(401)
+    }
+    if(!message){
+      console.log(`No message received`);
+      return res.status(401);
+    }
+
+    const decodedToken=jwt.verify(token , process.env.SECRET_KEY);
+    if(!decodedToken){
+      console.log(`Invalid token`);
+    }
+    const senderId = decodedToken._id;
+    const newMessage = {
+      senderId,
+      recipientId,
+      message,
+      timestamp: Date.now()
+    };
+
+    const result = await Message.create(newMessage);
+
+    console.log(`Message saved to database: ${message}`);
+
+    res.status(200).json({ success: true, message: 'Message sent successfully', messageId: result.insertedId });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ success: false, message: 'Failed to send message' });
+  }
+});
+
+app.get('/messages/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const messages = await Message.find({ recipientId: userId });
+    if (!messages || messages.length === 0) {
+      return res.status(404).json({ error: true, message: "No messages found" });
+    }
+
+    const senderNames = [];
+    for (const message of messages) {
+      const sender = await User.findById(message.senderId);
+      senderNames.push(sender.username);
+    }
+
+    return res.status(200).json({ error: false, messages, senderNames });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+io.on('connection', (socket) => {
+    console.log('A client connected');
+
+    socket.on('message', (data) => {
+      console.log(`Recevied messages:${data}`);
+      io.emit('message', data);
+    });
+});
+
 
 
 app.listen(port, () => {
