@@ -7,14 +7,26 @@
     <link rel="stylesheet" href="profile_page.css">
 </head>
 <body>
-    <form id="logout-form" action="/logout" method="GET">
-        <button type="submit" id="log-out">Log Out</button>
-    </form>
+    <header>
+        <h2 class="logo">IDEA CONNECT</h2>
+        <div id="search-bar">
+            <input type="text" id="search-input" placeholder="Search for products.....">
+            <button onclick="searchProfile()">Search</button>
+        </div>
+        <div id="received-messages-box" style="border: 1px solid #ccc; padding: 5px; margin-top: 5px;">
+            <h3>Received Messages</h3>
+            <div id="received-messages"></div>
+        </div>        
+        <nav class="navigation">
+          <form id="logout-form" action="/logout" method="GET">
+            <button type="submit" id="log-out">Log Out</button>
+          </form>
+        </nav>
+    </header>
     <div class="profile-container">
         <h1>Welcome <span id="profile-username"></span></h1>
         <div class="profile-details">
-            <div><strong>Profile Picture:</strong> <img id="profile-picture" src="" alt="Profile Picture"></div>
-            <!--<div><strong>Username:</strong><span id="profile-username"></span></div>-->
+            <div><img id="profile-picture" src="" alt="Profile Picture"></div>
             <div><strong>Email:</strong> <span id="profile-email"></span></div>
             <div><strong>Skills:</strong> <span id="profile-skills"></span></div>
             <div><strong>Expertise:</strong> <span id="profile-expertise"></span></div>
@@ -27,43 +39,17 @@
                 <input type="text" id="product-caption-input" placeholder="Caption">
                 <button onclick="addProduct()">Add Product</button>
             </div>
-            <div id="search-bar">
-                <input type="text" id="search-input" placeholder="Search by caption">
-                <button onclick="searchProfile()">Search</button>
-            </div>
             <div class="search-results" style="display: none;">
                 <h1>Search Results</h1>
                 <div id="search-results-container" class="results-container"></div>
-                 <span id="error"></span>
+                <span id="error"></span>
+                <button id="back" onclick="backToProfile()">Back</button>
             </div>
         </div>
     </div>
     <script src="main.js"></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <script>
-        async function logout() {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('Token not found in local storage');
-                }
-                const response = await fetch("http://localhost:3000/logout",{
-                    method:'GET',
-                    headers:{
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Logout failed');
-                    console.log('Log out failed');
-                }
-                if(response.status===200){
-                    window.close();
-                    alert("Log out sucessfully");
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
         async function searchProfile() {
             try {
                 const searchInput = document.getElementById('search-input').value;
@@ -80,6 +66,7 @@
                 if (!response.ok) {
                     throw new Error('Search failed');
                 }
+
                 document.querySelector('.search-results').style.display = "block";
                 const searchData = await response.json();
                 console.log('Search data:', searchData);
@@ -120,31 +107,121 @@
                         userElement.classList.add('user');
         
                         const username = document.createElement('p');
-                        username.textContent = `Username: ${user.username}`;
+                        username.textContent = `Username:${user.username}`;
                         userElement.appendChild(username);
         
                         const email = document.createElement('p');
                         email.textContent = `Email: ${user.email}`;
                         userElement.appendChild(email);
-        
+
+                        const messageInput = document.createElement('input');
+                        const messageId = `message-input-${user._id}`;
+                        messageInput.type = 'text';
+                        messageInput.id=messageId;
+                        messageInput.placeholder = 'Type your message...';
+                        userElement.appendChild(messageInput);
+                        
+                        const sendMessageButton = document.createElement('button');
+                        sendMessageButton.textContent = 'Send Message';
+                        sendMessageButton.addEventListener('click', () => {
+                            const userId = user._id; 
+                            const message = messageInput.value;
+                            // Send message via WebSocket
+                            socket.emit('message', { recipientId: userId, message });
+                            // Clear input field
+                            messageInput.value = '';
+                        });
+                        userElement.appendChild(sendMessageButton);
+                    
                         searchResultsContainer.appendChild(userElement);
+                        searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
                     });
-                }else if(res.status===401){
+                } else if(response.status===401){
                     const errorMessageSpan = document.getElementById('error-message');
-                    errorMessageSpan.textContent = res.statusText;
-                }
-                 else {
+                    errorMessageSpan.textContent = response.statusText;
+                } else if(response.status===404){
+                    const errorMessageSpan = document.getElementById('error-message');
+                    errorMessageSpan.textContent = "No products found";
+                    errorMessageSpan.style.display="flex";
+                    errorMessageSpan.style.color="white";
+
+                } else {
                     console.error('Profiles data is not available or not an array:', searchData);
+                }
+                
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        let socket;
+
+        async function connectWebSocket() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+        
+                socket = io('http://localhost:3000', {
+                    auth: {
+                        token: token
+                    }
+                });
+        
+                
+                socket.on('message', (data) => {
+                    
+                    const receivedMessagesContainer = document.getElementById('received-messages');
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+                    messageElement.textContent = `${data.senderName}: ${data.message}`;
+                    receivedMessagesContainer.appendChild(messageElement);
+                });
+            } catch (error) {
+                console.error('Error connecting to WebSocket:', error.message);
+            }
+        }
+
+        window.onload = async () => {
+            await connectWebSocket();
+        };
+
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch("http://localhost:3000/logout",{
+                    method:'GET',
+                    headers:{
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Logout failed');
+                    console.log('Log out failed');
+                }
+                if(response.status===200){
+                    window.close();
+                    alert("Log out successfully");
                 }
             } catch (err) {
                 console.error(err);
             }
-        }                
-            
+        }
+        
         document.getElementById("log-out").addEventListener("click", async(event) => {
             event.preventDefault();
             await logout();
         });
+
+        function backToProfile(){
+            document.querySelector('.profile-container').style.display = "block";
+            document.querySelector('.search-results').style.display = "none";
+        }
     </script>
 </body>
 </html>
+
