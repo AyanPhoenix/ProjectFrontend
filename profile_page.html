@@ -47,9 +47,43 @@
             </div>
         </div>
     </div>
+    <!--<script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>!-->
     <script src="main.js"></script>
-    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <script>
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch("http://localhost:3000/logout",{
+                    method:'GET',
+                    headers:{
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Logout failed');
+                    console.log('Log out failed');
+                }
+                if(response.status===200){
+                    window.close();
+                    alert("Log out successfully");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        function showMessageSection(username, userId) {
+            document.querySelector('.search-results').style.display = "none";
+            document.querySelector('.message-section').style.display = "block";
+            document.getElementById('recipient-profile').textContent = username;
+            document.getElementById('recipient-id').textContent = userId;
+        }        
+
         async function searchProfile() {
             try {
                 const searchInput = document.getElementById('search-input').value;
@@ -107,7 +141,7 @@
                         userElement.classList.add('user');
         
                         const username = document.createElement('p');
-                        username.textContent = `Username:${user.username}`;
+                        username.textContent = `Username: ${user.username}`;
                         userElement.appendChild(username);
         
                         const email = document.createElement('p');
@@ -125,16 +159,14 @@
                         sendMessageButton.textContent = 'Send Message';
                         sendMessageButton.addEventListener('click', () => {
                             const userId = user._id; 
-                            const message = messageInput.value;
-                            // Send message via WebSocket
-                            socket.emit('message', { recipientId: userId, message });
-                            // Clear input field
-                            messageInput.value = '';
+                            //localStorage.setItem('userId', user._id); 
+                            sendMessage(userId);
                         });
                         userElement.appendChild(sendMessageButton);
                     
                         searchResultsContainer.appendChild(userElement);
                         searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
+
                     });
                 } else if(response.status===401){
                     const errorMessageSpan = document.getElementById('error-message');
@@ -153,65 +185,113 @@
                 console.error(err);
             }
         }
-
-        let socket;
-
-        async function connectWebSocket() {
+        
+        async function sendMessage(userId) {
             try {
+                const messageInput = document.getElementById(`message-input-${userId}`).value;
                 const token = localStorage.getItem('token');
+                //const userId = localStorage.getItem('userId');
+                console.log("message:",messageInput);
+                console.log(`Userid:${userId}`);
                 if (!token) {
                     throw new Error('Token not found in local storage');
                 }
-        
-                socket = io('http://localhost:3000', {
-                    auth: {
-                        token: token
-                    }
+                const response = await fetch('http://localhost:3000/sendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        recipientId: userId,
+                        message: messageInput
+                    })
                 });
-        
-                
-                socket.on('message', (data) => {
-                    
-                    const receivedMessagesContainer = document.getElementById('received-messages');
-                    const messageElement = document.createElement('div');
-                    messageElement.classList.add('message');
-                    messageElement.textContent = `${data.senderName}: ${data.message}`;
-                    receivedMessagesContainer.appendChild(messageElement);
-                });
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                } else if (response.status === 200) {
+                    alert(`Message sent successfully`);
+                }else if(response.status===401){
+                    console.log("Receipient id is required");
+                }
             } catch (error) {
-                console.error('Error connecting to WebSocket:', error.message);
+                console.error('Error sending message:', error.message);
             }
         }
 
-        window.onload = async () => {
-            await connectWebSocket();
-        };
-
-        async function logout() {
+        async function fetchMessages() {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('Token not found in local storage');
+                const userId = localStorage.getItem('userId');
+                if (!token || !userId) {
+                    throw new Error('Token or userId not found in local storage');
                 }
-                const response = await fetch("http://localhost:3000/logout",{
-                    method:'GET',
-                    headers:{
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                const response = await fetch(`http://localhost:3000/messages/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 if (!response.ok) {
-                    throw new Error('Logout failed');
-                    console.log('Log out failed');
+                    throw new Error('Failed to fetch messages');
+                } else if (response.status === 200) {
+                    const messagesData = await response.json();
+                    console.log(messagesData);
+                    const receivedMessagesContainer = document.getElementById('received-messages');
+                    receivedMessagesContainer.innerHTML = '';
+        
+                    const { messages, senderNames } = messagesData; 
+        
+                    console.log("sender:", senderNames);
+        
+                    if (messages && Array.isArray(messages)) {
+                        if (messages.length === 0) {
+                            console.log(`No messages found`);
+                        }
+                        for (const message of messages) {
+                            const messageElement = document.createElement('div');
+                            messageElement.classList.add('message');
+                            const senderName = senderNames[messages.indexOf(message)];
+                            messageElement.textContent = `${senderName}: ${message.message}`; 
+                            messageElement.textContent = message.message;
+                            messageElement.dataset.messageId = message._id;
+                            messageElement.addEventListener('click', () => displayMessageContent(message._id));
+                            receivedMessagesContainer.appendChild(messageElement);
+                        }
+        
+                    } else {
+                        console.log('No messages found');
+                    }
                 }
-                if(response.status===200){
-                    window.close();
-                    alert("Log out successfully");
-                }
-            } catch (err) {
-                console.error(err);
+            } catch (error) {
+                console.error('Error fetching messages:', error.message);
             }
         }
         
+        async function displayMessageContent(messageId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch(`http://localhost:3000/messages/${messageId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch message content');
+                }
+                const messageData = await response.json();
+                alert(`Message content: ${messageData.content}`);
+            } catch (error) {
+                console.error('Error fetching message content:', error.message);
+            }
+        }
+       window.onload = fetchMessages;
+
+            
         document.getElementById("log-out").addEventListener("click", async(event) => {
             event.preventDefault();
             await logout();
@@ -221,7 +301,7 @@
             document.querySelector('.profile-container').style.display = "block";
             document.querySelector('.search-results').style.display = "none";
         }
+        
     </script>
 </body>
 </html>
-
