@@ -483,17 +483,6 @@ app.get('/messages/:userId', async (req, res) => {
   }
 });
 
-io.on('connection', (socket) => {
-    console.log('A client connected');
-
-    socket.on('message', (data) => {
-      console.log(`Recevied messages:${data}`);
-      io.emit('message', data);
-    });
-});
-
-
-
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
