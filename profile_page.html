@@ -10,17 +10,17 @@
     <header>
         <h2 class="logo">IDEA CONNECT</h2>
         <div id="search-bar">
-            <input type="text" id="search-input" placeholder="Search for products.....">
+            <input type="text" id="search-input" placeholder="Search for products...">
             <button onclick="searchProfile()">Search</button>
         </div>
         <div id="received-messages-box" style="border: 1px solid #ccc; padding: 5px; margin-top: 5px;">
             <h3>Received Messages</h3>
-            <div id="received-messages"></div>
+            <div id="received-messages" style="cursor: pointer;">Click here to view messages</div>
         </div>        
         <nav class="navigation">
-          <form id="logout-form" action="/logout" method="GET">
-            <button type="submit" id="log-out">Log Out</button>
-          </form>
+            <form id="logout-form" action="/logout" method="GET">
+                <button type="submit" id="log-out">Log Out</button>
+            </form>
         </nav>
     </header>
     <div class="profile-container">
@@ -47,10 +47,20 @@
             </div>
         </div>
     </div>
-    <!--<script
-      type="module"
-      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
-    ></script>!-->
+    <div class="container" id="chat-container" style="display: none;">
+        <div class="chat-window">
+            <button type="button" class="close-button" onclick="closeChat()">Close</button>
+            <div class="chat-area">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Chat Messages -->
+                </div>
+            </div>
+            <div class="user-input">
+                <input type="text" id="message-input" placeholder="Type your message...">
+                <button id="send-button" onclick="sendNewMessage()">Send</button>
+            </div>
+        </div>
+    </div>
     <script src="main.js"></script>
     <script>
         async function logout() {
@@ -59,30 +69,32 @@
                 if (!token) {
                     throw new Error('Token not found in local storage');
                 }
-                const response = await fetch("http://localhost:3000/logout",{
-                    method:'GET',
-                    headers:{
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                const response = await fetch("http://localhost:3000/logout", {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 if (!response.ok) {
                     throw new Error('Logout failed');
-                    console.log('Log out failed');
                 }
-                if(response.status===200){
-                    window.close();
-                    alert("Log out successfully");
+                if (response.status === 200) {
+                    //window.close();
+                    localStorage.removeItem('token');
+                    alert("Logged out successfully");
+                    window.location.href="login_update.html";
                 }
             } catch (err) {
                 console.error(err);
             }
         }
+
         function showMessageSection(username, userId) {
             document.querySelector('.search-results').style.display = "none";
             document.querySelector('.message-section').style.display = "block";
             document.getElementById('recipient-profile').textContent = username;
             document.getElementById('recipient-id').textContent = userId;
-        }        
+        }
 
         async function searchProfile() {
             try {
@@ -94,7 +106,7 @@
                 const response = await fetch(`http://localhost:3000/search?caption=${searchInput}`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 if (!response.ok) {
@@ -106,18 +118,18 @@
                 console.log('Search data:', searchData);
                 const searchResultsContainer = document.getElementById('search-results-container');
                 searchResultsContainer.innerHTML = ''; 
-        
+
                 if (searchData.profiles && Array.isArray(searchData.profiles) && searchData.users && Array.isArray(searchData.users)) {
                     searchData.profiles.forEach(profile => {
                         const profileElement = document.createElement('div');
                         profileElement.classList.add('profile');
-        
+
                         const profilePicture = document.createElement('img');
                         profilePicture.src = profile.profilePicture;
                         profilePicture.width = 70; 
                         profilePicture.height = 70;
                         profileElement.appendChild(profilePicture);
-        
+
                         const productImagesContainer = document.createElement('div');
                         productImagesContainer.classList.add('product-images-container');
                         profile.productImages.forEach(image => {
@@ -128,22 +140,22 @@
                             productImagesContainer.appendChild(productImage);
                         });
                         profileElement.appendChild(productImagesContainer);
-        
+
                         const productImages = document.createElement('p');
                         productImages.textContent = `Product Images: ${profile.productImages.map(image => image.caption).join(', ')}`;
                         profileElement.appendChild(productImages);
-        
+
                         searchResultsContainer.appendChild(profileElement);
                     });
-        
+
                     searchData.users.forEach(user => {
                         const userElement = document.createElement('div');
                         userElement.classList.add('user');
-        
+
                         const username = document.createElement('p');
                         username.textContent = `Username: ${user.username}`;
                         userElement.appendChild(username);
-        
+
                         const email = document.createElement('p');
                         email.textContent = `Email: ${user.email}`;
                         userElement.appendChild(email);
@@ -151,7 +163,7 @@
                         const messageInput = document.createElement('input');
                         const messageId = `message-input-${user._id}`;
                         messageInput.type = 'text';
-                        messageInput.id=messageId;
+                        messageInput.id = messageId;
                         messageInput.placeholder = 'Type your message...';
                         userElement.appendChild(messageInput);
                         
@@ -159,70 +171,40 @@
                         sendMessageButton.textContent = 'Send Message';
                         sendMessageButton.addEventListener('click', () => {
                             const userId = user._id; 
-                            //localStorage.setItem('userId', user._id); 
-                            sendMessage(userId);
+                            console.log("id:",userId);
+                            const recipient_id=localStorage.setItem('recipient-id',userId);
+                            console.log('recp:',recipient_id);
+                            sendMessage(userId, messageInput.value);
                         });
                         userElement.appendChild(sendMessageButton);
-                    
+
                         searchResultsContainer.appendChild(userElement);
                         searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
-
                     });
-                } else if(response.status===401){
-                    const errorMessageSpan = document.getElementById('error-message');
-                    errorMessageSpan.textContent = response.statusText;
-                } else if(response.status===404){
-                    const errorMessageSpan = document.getElementById('error-message');
-                    errorMessageSpan.textContent = "No products found";
-                    errorMessageSpan.style.display="flex";
-                    errorMessageSpan.style.color="white";
-
                 } else {
-                    console.error('Profiles data is not available or not an array:', searchData);
+                    const errorMessageSpan = document.getElementById('error');
+                    errorMessageSpan.textContent = 'No products found';
+                    errorMessageSpan.style.display = 'block';
+                    errorMessageSpan.style.color = 'red';
                 }
-                
             } catch (err) {
                 console.error(err);
             }
         }
-        
-        async function sendMessage(userId) {
-            try {
-                const messageInput = document.getElementById(`message-input-${userId}`).value;
-                const token = localStorage.getItem('token');
-                //const userId = localStorage.getItem('userId');
-                console.log("message:",messageInput);
-                console.log(`Userid:${userId}`);
-                if (!token) {
-                    throw new Error('Token not found in local storage');
-                }
-                const response = await fetch('http://localhost:3000/sendMessage', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({
-                        recipientId: userId,
-                        message: messageInput
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error('Failed to send message');
-                } else if (response.status === 200) {
-                    alert(`Message sent successfully`);
-                }else if(response.status===401){
-                    console.log("Receipient id is required");
-                }
-            } catch (error) {
-                console.error('Error sending message:', error.message);
-            }
+
+        function sendNewMessage() {
+            const userId = localStorage.getItem('recipient-id');
+            console.log('Recipient ID:', userId);
+            const messageInput = document.getElementById('message-input').value;
+            sendMessage(userId, messageInput);
+            document.getElementById('message-input').value = ''; 
         }
 
         async function fetchMessages() {
             try {
                 const token = localStorage.getItem('token');
-                const userId = localStorage.getItem('userId');
+                const userId = localStorage.getItem('recipient-id');
+                console.log("fetch:",userId);
                 if (!token || !userId) {
                     throw new Error('Token or userId not found in local storage');
                 }
@@ -234,40 +216,62 @@
                 });
                 if (!response.ok) {
                     throw new Error('Failed to fetch messages');
-                } else if (response.status === 200) {
-                    const messagesData = await response.json();
-                    console.log(messagesData);
-                    const receivedMessagesContainer = document.getElementById('received-messages');
-                    receivedMessagesContainer.innerHTML = '';
-        
-                    const { messages, senderNames } = messagesData; 
-        
-                    console.log("sender:", senderNames);
-        
-                    if (messages && Array.isArray(messages)) {
-                        if (messages.length === 0) {
-                            console.log(`No messages found`);
-                        }
-                        for (const message of messages) {
-                            const messageElement = document.createElement('div');
-                            messageElement.classList.add('message');
-                            const senderName = senderNames[messages.indexOf(message)];
-                            messageElement.textContent = `${senderName}: ${message.message}`; 
-                            messageElement.textContent = message.message;
-                            messageElement.dataset.messageId = message._id;
-                            messageElement.addEventListener('click', () => displayMessageContent(message._id));
-                            receivedMessagesContainer.appendChild(messageElement);
-                        }
-        
-                    } else {
+                }
+                const messagesData = await response.json();
+                const chatMessagesContainer = document.getElementById('chat-messages');
+                chatMessagesContainer.innerHTML = '';
+
+                const { messages, senderNames } = messagesData;
+
+                if (messages && Array.isArray(messages)) {
+                    if (messages.length === 0) {
                         console.log('No messages found');
                     }
+                    messages.forEach((message, index) => {
+                        const messageElement = document.createElement('div');
+                        messageElement.classList.add('message');
+                        const senderName = senderNames[index];
+                        messageElement.textContent = `${senderName}: ${message.message}`;
+                        messageElement.dataset.messageId = message._id;
+                        chatMessagesContainer.appendChild(messageElement);
+                    });
+                } else {
+                    console.log('No messages found');
                 }
             } catch (error) {
                 console.error('Error fetching messages:', error.message);
             }
         }
-        
+
+        async function sendMessage(userId, messageInput) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch('http://localhost:3000/sendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        recipientId: userId,
+                        message: messageInput
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                }
+                if (response.status === 200) {
+                    alert('Message sent successfully');
+                    fetchMessages(); 
+                }
+            } catch (error) {
+                console.error('Error sending message:', error.message);
+            }
+        }
+
         async function displayMessageContent(messageId) {
             try {
                 const token = localStorage.getItem('token');
@@ -289,17 +293,28 @@
                 console.error('Error fetching message content:', error.message);
             }
         }
-       window.onload = fetchMessages;
 
-            
+        document.getElementById('received-messages').addEventListener('click', () => {
+            console.log('Received Messages clicked');
+            document.getElementById('chat-container').style.display = 'block';
+            fetchMessages();
+        });
+
+        window.onload = fetchMessages;
+
         document.getElementById("log-out").addEventListener("click", async(event) => {
             event.preventDefault();
             await logout();
         });
 
-        function backToProfile(){
+        function backToProfile() {
             document.querySelector('.profile-container').style.display = "block";
             document.querySelector('.search-results').style.display = "none";
+        }
+
+        function closeChat() {
+            document.querySelector('.profile-container').style.display = "block";
+            document.querySelector('#chat-container').style.display = "none";
         }
         
     </script>
