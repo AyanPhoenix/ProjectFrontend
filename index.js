@@ -281,7 +281,7 @@ app.get('/logout', function(req, res) {
     return res.status(401).json({ success: false, message: "Invalid token" });
   }
   try {
-    res.clearCookie('jwt');  
+    res.clearCookie('jwt'); 
     return res.status(200).json({ success: true, message: "Logout successful" });
   } catch (error) {
     console.error("Error during logout:", error);
