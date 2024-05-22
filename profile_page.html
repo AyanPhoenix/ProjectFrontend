@@ -42,7 +42,7 @@
             <div class="search-results" style="display: none;">
                 <h1>Search Results</h1>
                 <div id="search-results-container" class="results-container"></div>
-                <span id="error"></span>
+                <span id="error" style="color: white; display: none;"></span>
                 <button id="back" onclick="backToProfile()">Back</button>
             </div>
         </div>
@@ -79,7 +79,6 @@
                     throw new Error('Logout failed');
                 }
                 if (response.status === 200) {
-                    //window.close();
                     localStorage.removeItem('token');
                     alert("Logged out successfully");
                     window.location.href="login_update.html";
@@ -109,9 +108,6 @@
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                if (!response.ok) {
-                    throw new Error('Search failed');
-                }
 
                 document.querySelector('.search-results').style.display = "block";
                 const searchData = await response.json();
@@ -181,14 +177,20 @@
                         searchResultsContainer.appendChild(userElement);
                         searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
                     });
-                } else {
-                    const errorMessageSpan = document.getElementById('error');
+                } else if(response.status===404){
+                    document.querySelector('.search-results').style.display = "block";
+                    searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
+                    const errorMessageSpan=document.getElementById('error');
                     errorMessageSpan.textContent = 'No products found';
                     errorMessageSpan.style.display = 'block';
-                    errorMessageSpan.style.color = 'red';
+                    searchResultsContainer.appendChild(errorMessageSpan);
+                    
                 }
             } catch (err) {
                 console.error(err);
+                const errorMessageSpan = document.getElementById('error');
+                errorMessageSpan.textContent = err.message || 'An error occurred during the search';
+                errorMessageSpan.style.display = 'block';
             }
         }
 
