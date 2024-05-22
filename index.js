@@ -289,9 +289,18 @@ app.get('/logout', function(req, res) {
   }
   
 });
+
 app.get('/search', async (req, res) => {
   try {
       const { caption } = req.query;
+      const token = req.headers.authorization ? req.headers.authorization.slice(7) : null;
+      
+      if (!token) {
+          console.log(`Token is missing`);
+          return res.status(400).json({ error: true, message: "Token is missing" });
+      }
+      
+      const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
 
       if (!caption) {
           return res.status(400).json({ error: true, message: "Caption is required for search" });
@@ -303,16 +312,22 @@ app.get('/search', async (req, res) => {
           return res.status(404).json({ error: true, message: "No profiles found matching the caption" });
       }
 
-      const userIds = profiles.map(profile => profile.userId._id);
+      const filteredProfiles = profiles.filter(profile => profile.userId._id.toString() !== decodedToken._id);
+
+      if (!filteredProfiles || filteredProfiles.length === 0) {
+          return res.status(404).json({ error: true, message: "No profiles found matching the caption" });
+      }
+
+      const userIds = filteredProfiles.map(profile => profile.userId._id);
 
       const users = await User.find({ _id: { $in: userIds } });
       
-
       if (!users || users.length === 0) {
           return res.status(404).json({ error: true, message: "No users found matching the profiles" });
       }
 
-      return res.status(200).json({ error: false, profiles, users });
+      return res.status(200).json({ error: false, profiles: filteredProfiles, users });
+      
   } catch (error) {
       console.error("Error searching profiles:", error);
       return res.status(500).json({ error: true, message: "Internal Server Error" });
