@@ -480,21 +480,56 @@ app.get('/messages/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    const messages = await Message.find({ recipientId: userId });
+    if (!userId) {
+      return res.status(401).json({ error: true, message: 'Unauthorized' });
+    }
+
+    const decodedToken = jwt.verify(userId, process.env.SECRET_KEY);
+
+    const messages = await Message.find({
+      $or: [
+        { recipientId: decodedToken },
+        { senderId: decodedToken}
+      ]
+    });
+
     if (!messages || messages.length === 0) {
-      return res.status(404).json({ error: true, message: "No messages found" });
+      return res.status(404).json({ error: true, message: 'No messages found' });
     }
 
-    const senderNames = [];
-    for (const message of messages) {
+    const senderNames = await Promise.all(messages.map(async (message) => {
       const sender = await User.findById(message.senderId);
-      senderNames.push(sender.username);
-    }
-
-    return res.status(200).json({ error: false, messages, senderNames });
+      return sender.username;
+    }));
+    
+      return res.status(200).json({ error: false, messages, senderNames});
+    
   } catch (error) {
     console.error('Error fetching messages:', error);
     return res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+app.get('/search/:userId', async (req, res) => {
+  try {
+    const username= req.params.userId;
+    console.log("name:",username);
+
+    if (!username) {
+      return res.status(401).json({ error: true, message: 'Unauthorized' });
+    }
+
+    const user= await User.findOne({username:username})
+    if(!user){
+      return res.status(404).json({message:"No user found"});
+    }
+
+    return res.status(200).json({error:false , _id:user._id});
+
+   
+  } catch (error) {
+    console.error('Error searching user:', error);
+    return res.status(500).json({ error: 'Failed to search' });
   }
 });
 
