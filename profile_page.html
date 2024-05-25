@@ -50,9 +50,9 @@
     <div class="container" id="chat-container" style="display: none;">
         <div class="chat-window">
             <button type="button" class="close-button" onclick="closeChat()">Close</button>
+            Chat with <span id="chat-sender-name"></span>
             <div class="chat-area">
-                <div class="chat-messages" id="chat-messages">
-                    <!-- Chat Messages -->
+                <div class="chat-messages" id="chat-messages"></div>
                 </div>
             </div>
             <div class="user-input">
@@ -80,6 +80,7 @@
                 }
                 if (response.status === 200) {
                     localStorage.removeItem('token');
+                    //localStorage.removeItem('recipient-id');
                     alert("Logged out successfully");
                     window.location.href="login_update.html";
                 }
@@ -194,23 +195,39 @@
             }
         }
 
-        function sendNewMessage() {
-            const userId = localStorage.getItem('recipient-id');
-            console.log('Recipient ID:', userId);
+        function openChat(userId, username) {
+            localStorage.setItem('recipient-id', userId);
+            document.querySelector('#chat-container').style.display = 'block';
+            document.querySelector('.profile-container').style.display = 'none';
+            document.getElementById('chat-sender-name').textContent = username;
+            fetchMessages(userId);
+        }
+
+       async function sendNewMessage() {
+            const userId=localStorage.getItem('recipient-id');
+            const res= await fetch(`http://localhost:3000/search/${userId}`,{
+              method: 'GET',
+            })
+            if(!res.ok){
+              console.log(`Searching failed`);
+            }
+            const recpData= await res.json();
+            const recpId=recpData._id;
+            console.log('Recipient ID:', recpId);
             const messageInput = document.getElementById('message-input').value;
-            sendMessage(userId, messageInput);
+            sendMessage(recpId, messageInput);
             document.getElementById('message-input').value = ''; 
         }
 
         async function fetchMessages() {
             try {
                 const token = localStorage.getItem('token');
-                const userId = localStorage.getItem('recipient-id');
-                console.log("fetch:",userId);
-                if (!token || !userId) {
+                //const userId = localStorage.getItem('recipient-id');
+                console.log("fetch:",token);
+                if (!token) {
                     throw new Error('Token or userId not found in local storage');
                 }
-                const response = await fetch(`http://localhost:3000/messages/${userId}`, {
+                const response = await fetch(`http://localhost:3000/messages/${token}`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -236,6 +253,9 @@
                         messageElement.textContent = `${senderName}: ${message.message}`;
                         messageElement.dataset.messageId = message._id;
                         chatMessagesContainer.appendChild(messageElement);
+                        const chatsender=document.getElementById('chat-sender-name');
+                        chatsender.textContent=senderName;
+
                     });
                 } else {
                     console.log('No messages found');
@@ -302,8 +322,8 @@
             fetchMessages();
         });
 
-        window.onload = fetchMessages;
-
+        window.onload = fetchMessages();
+      
         document.getElementById("log-out").addEventListener("click", async(event) => {
             event.preventDefault();
             await logout();
