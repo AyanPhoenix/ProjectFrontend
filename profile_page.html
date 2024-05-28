@@ -15,8 +15,8 @@
         </div>
         <div id="received-messages-box" style="border: 1px solid #ccc; padding: 5px; margin-top: 5px;">
             <h3>Received Messages</h3>
-            <div id="received-messages" style="cursor: pointer;">Click here to view messages</div>
-        </div>        
+            <div id="message-list-container" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
         <nav class="navigation">
             <form id="logout-form" action="/logout" method="GET">
                 <button type="submit" id="log-out">Log Out</button>
@@ -53,7 +53,6 @@
             Chat with <span id="chat-sender-name"></span>
             <div class="chat-area">
                 <div class="chat-messages" id="chat-messages"></div>
-                </div>
             </div>
             <div class="user-input">
                 <input type="text" id="message-input" placeholder="Type your message...">
@@ -80,20 +79,12 @@
                 }
                 if (response.status === 200) {
                     localStorage.removeItem('token');
-                    //localStorage.removeItem('recipient-id');
                     alert("Logged out successfully");
                     window.location.href="login_update.html";
                 }
             } catch (err) {
                 console.error(err);
             }
-        }
-
-        function showMessageSection(username, userId) {
-            document.querySelector('.search-results').style.display = "none";
-            document.querySelector('.message-section').style.display = "block";
-            document.getElementById('recipient-profile').textContent = username;
-            document.getElementById('recipient-id').textContent = userId;
         }
 
         async function searchProfile() {
@@ -112,7 +103,6 @@
 
                 document.querySelector('.search-results').style.display = "block";
                 const searchData = await response.json();
-                console.log('Search data:', searchData);
                 const searchResultsContainer = document.getElementById('search-results-container');
                 searchResultsContainer.innerHTML = ''; 
 
@@ -168,9 +158,7 @@
                         sendMessageButton.textContent = 'Send Message';
                         sendMessageButton.addEventListener('click', () => {
                             const userId = user._id; 
-                            console.log("id:",userId);
-                            const recipient_id=localStorage.setItem('recipient-id',userId);
-                            console.log('recp:',recipient_id);
+                            localStorage.setItem('recipient-id', userId);
                             sendMessage(userId, messageInput.value);
                         });
                         userElement.appendChild(sendMessageButton);
@@ -178,88 +166,49 @@
                         searchResultsContainer.appendChild(userElement);
                         searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
                     });
-                } else if(response.status===404){
+                } else if(response.status === 404){
                     document.querySelector('.search-results').style.display = "block";
                     searchResultsContainer.scrollIntoView({ behavior: 'smooth' });
-                    const errorMessageSpan=document.getElementById('error');
-                    errorMessageSpan.textContent = 'No products found';
+                    const errorMessageSpan = document.getElementById('error');
+                    errorMessageSpan.textContent = 'No Profile Found';
                     errorMessageSpan.style.display = 'block';
-                    searchResultsContainer.appendChild(errorMessageSpan);
-                    
                 }
-            } catch (err) {
-                console.error(err);
-                const errorMessageSpan = document.getElementById('error');
-                errorMessageSpan.textContent = err.message || 'An error occurred during the search';
-                errorMessageSpan.style.display = 'block';
+            } catch (error) {
+                console.error('Error searching profile:', error.message);
             }
-        }
-
-        function openChat(userId, username) {
-            localStorage.setItem('recipient-id', userId);
-            document.querySelector('#chat-container').style.display = 'block';
-            document.querySelector('.profile-container').style.display = 'none';
-            document.getElementById('chat-sender-name').textContent = username;
-            fetchMessages(userId);
-        }
-
-       async function sendNewMessage() {
-            const userId=localStorage.getItem('recipient-id');
-            const res= await fetch(`http://localhost:3000/search/${userId}`,{
-              method: 'GET',
-            })
-            if(!res.ok){
-              console.log(`Searching failed`);
-            }
-            const recpData= await res.json();
-            const recpId=recpData._id;
-            console.log('Recipient ID:', recpId);
-            const messageInput = document.getElementById('message-input').value;
-            sendMessage(recpId, messageInput);
-            document.getElementById('message-input').value = ''; 
         }
 
         async function fetchMessages() {
             try {
                 const token = localStorage.getItem('token');
-                //const userId = localStorage.getItem('recipient-id');
-                console.log("fetch:",token);
                 if (!token) {
-                    throw new Error('Token or userId not found in local storage');
+                    throw new Error('Token not found in local storage');
                 }
-                const response = await fetch(`http://localhost:3000/messages/${token}`, {
+                const response = await fetch('http://localhost:3000/messages', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                if (!response.ok) {
-                    throw new Error('Failed to fetch messages');
+                if(response.status===404){
+                    const messageListContainer = document.getElementById('message-list-container');
+                    messageListContainer.textContent="No message found";
+                    return;
                 }
-                const messagesData = await response.json();
-                const chatMessagesContainer = document.getElementById('chat-messages');
-                chatMessagesContainer.innerHTML = '';
+                const {messages , senderNames}= await response.json();
+                console.log("message data:",messages);
+                const messageListContainer = document.getElementById('message-list-container');
+                messageListContainer.innerHTML = '';
 
-                const { messages, senderNames } = messagesData;
-
-                if (messages && Array.isArray(messages)) {
-                    if (messages.length === 0) {
-                        console.log('No messages found');
-                    }
-                    messages.forEach((message, index) => {
-                        const messageElement = document.createElement('div');
-                        messageElement.classList.add('message');
-                        const senderName = senderNames[index];
-                        messageElement.textContent = `${senderName}: ${message.message}`;
-                        messageElement.dataset.messageId = message._id;
-                        chatMessagesContainer.appendChild(messageElement);
-                        const chatsender=document.getElementById('chat-sender-name');
-                        chatsender.textContent=senderName;
-
+                messages.forEach((message, index) => {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+                    messageElement.textContent = `From: ${senderNames[index]}, Message: ${message.message}`;
+                    messageElement.addEventListener('click', () => {
+                        openChat(message.senderId, senderNames[index]);
                     });
-                } else {
-                    console.log('No messages found');
-                }
+                    messageListContainer.appendChild(messageElement);
+                });
             } catch (error) {
                 console.error('Error fetching messages:', error.message);
             }
@@ -316,18 +265,53 @@
             }
         }
 
-        document.getElementById('received-messages').addEventListener('click', () => {
-            console.log('Received Messages clicked');
-            document.getElementById('chat-container').style.display = 'block';
-            fetchMessages();
-        });
+        function openChat(userId, username) {
+            localStorage.setItem('recipient-id', userId);
+            document.querySelector('#chat-container').style.display = 'block';
+            document.getElementById('chat-sender-name').textContent = username;
+            fetchPreviousMessages(userId,username);
+        }
+        async function fetchPreviousMessages(userId,username) {
+            try {
+                const token=localStorage.getItem('token');
+                if(!token){
+                    console.log('Token not found in localstorage');
+                }
+                const response = await fetch(`http://localhost:3000/messages/${userId}`, {
+                    method: 'GET',
+                    headers:{
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if(!response.ok){
+                    console.log("Fetching messages failed");
+                }
+                const data = await response.json();
+                console.log('final data:',data);
+                const chatContainer = document.getElementById('chat-messages');
+                chatContainer.innerHTML = '';
 
-        window.onload = fetchMessages();
-      
-        document.getElementById("log-out").addEventListener("click", async(event) => {
-            event.preventDefault();
-            await logout();
-        });
+                data.messages.forEach(message => {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message');
+                    const messageText = message.senderId === userId ? `${username}: ${message.message}` :  `You: ${message.message}`;
+                   
+                    messageElement.textContent = messageText;
+                    chatContainer.appendChild(messageElement);
+                });
+            }catch (error) {
+                console.error('Error fetching messages:', error.message);
+            }
+        }
+        
+
+        async function sendNewMessage() {
+            const userId = localStorage.getItem('recipient-id');
+            const messageInput = document.getElementById('message-input').value;
+            await sendMessage(userId, messageInput);
+            document.getElementById('message-input').value = ''; 
+            await fetchPreviousMessages(userId); 
+        }
 
         function backToProfile() {
             document.querySelector('.profile-container').style.display = "block";
@@ -338,7 +322,13 @@
             document.querySelector('.profile-container').style.display = "block";
             document.querySelector('#chat-container').style.display = "none";
         }
-        
+
+        document.getElementById("log-out").addEventListener("click", async (event) => {
+            event.preventDefault();
+            await logout();
+        });
+
+        window.onload = fetchMessages;
     </script>
 </body>
 </html>
