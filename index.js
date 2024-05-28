@@ -476,9 +476,9 @@ app.post('/sendMessage', async (req, res) => {
   }
 });
 
-app.get('/messages/:userId', async (req, res) => {
+app.get('/messages', async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.headers.authorization.slice(7);
 
     if (!userId) {
       return res.status(401).json({ error: true, message: 'Unauthorized' });
@@ -486,12 +486,7 @@ app.get('/messages/:userId', async (req, res) => {
 
     const decodedToken = jwt.verify(userId, process.env.SECRET_KEY);
 
-    const messages = await Message.find({
-      $or: [
-        { recipientId: decodedToken },
-        { senderId: decodedToken}
-      ]
-    });
+    const messages = await Message.find({ recipientId: decodedToken });
 
     if (!messages || messages.length === 0) {
       return res.status(404).json({ error: true, message: 'No messages found' });
@@ -510,21 +505,32 @@ app.get('/messages/:userId', async (req, res) => {
   }
 });
 
-app.get('/search/:userId', async (req, res) => {
+app.get('/messages/:userId', async (req, res) => {
   try {
-    const username= req.params.userId;
-    console.log("name:",username);
+    const userID= req.params.userId;
+    console.log("name:",userID);
+    const token=req.headers.authorization.slice(7);
+    if(!token){
+      console.log(`Token is required`);
+    }
 
-    if (!username) {
+    if (!userID) {
       return res.status(401).json({ error: true, message: 'Unauthorized' });
     }
-
-    const user= await User.findOne({username:username})
-    if(!user){
-      return res.status(404).json({message:"No user found"});
+    const decodedToken=jwt.verify(token,process.env.SECRET_KEY);
+    if(!decodedToken){
+      console.log(`Invalid token`);
     }
 
-    return res.status(200).json({error:false , _id:user._id});
+    const messages= await Message.find({
+      $or: [{ senderId: decodedToken, recipientId: userID },{ recipientId: decodedToken, senderId: userID }]
+    });
+    if(!messages){
+      return res.status(404).json({message:"No user found"});
+    }
+    console.log("messss:",messages);
+    const usernames= await User.findOne({_id:userID});
+    return res.status(200).json({error:false ,username:usernames.username, messages:messages});
 
    
   } catch (error) {
