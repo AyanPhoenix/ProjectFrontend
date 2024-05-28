@@ -5,8 +5,6 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const http = require('http');
-const socketIO = require('socket.io');
 const cookieparser = require("cookie-parser");
 require("dotenv").config();
 
@@ -29,8 +27,6 @@ const upload = multer({ storage: storage });
 
 const app = express();
 const port = 3000;
-const server = http.createServer(app);
-const io = socketIO(server);
 
 mongoose
   .connect("mongodb://localhost:27017/UserDB")
