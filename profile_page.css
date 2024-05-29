@@ -1,10 +1,10 @@
 body {
-  background: linear-gradient(to right, #2c3e50, #bdc3c7);
   font-family: 'Roboto', sans-serif;
   margin: 0;
   padding: 0;
   background-image: url("back.png");
   color: #ecf0f1;
+  background-attachment: fixed;
 }
 
 
@@ -13,20 +13,23 @@ header {
   justify-content: space-between;
   align-items: center;
   background-color: transparent;
-  padding: 15px 30px;
+  padding: 15px 50px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 header .logo {
-  font-size: 24px;
+  font-size: 50px;
   font-weight: bold;
   color: whitesmoke;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-#search-bar {
+.search-bar {
   display: flex;
+  position: relative;
   align-items: center;
+  width: 500px;
+  left: 100px;
 }
 
 #search-input {
@@ -40,7 +43,7 @@ header .logo {
   color: #ecf0f1;
 }
 
-#search-bar button {
+.search-bar button {
   padding: 10px 20px;
   border: none;
   background-color: #e74c3c;
@@ -334,3 +337,99 @@ header .logo {
 .close-button:hover {
   background-color: #c0392b;
 }
+
+
+ .search-bar .icons {
+  position: absolute;
+  left: 279px;
+  top: 21px;
+  transform: translatey(-50%);
+  pointer-events: none;
+  font-weight: bolder;
+  font-size: 25px;
+ }
+ .chat-window .close-button{
+  font-size: 21px; 
+ }
+
+ .chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color:rgba(0, 255, 255, 0.8); ;
+  color:#333333;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.chat-header .chat-title {
+  font-size: 1.2em;
+  font-weight: bolder;
+  flex-grow: 1;
+}
+.chat-messages{
+  display: flex;
+  font-size: 1em;
+  border-radius: 20px;
+  color:#333333;
+  flex-direction: column;
+  padding: 10px;
+  max-width: 70%;
+  margin: 10px 0;
+  align-self: flex-start;
+}
+
+.chat-message {
+  background-color: white;
+  border-radius: 15px;
+  padding: 10px;
+  margin: 5px 0;
+  color: #333333; 
+  word-wrap: break-word;
+}
+
+.user-input {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: #2c3e50;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.user-input input[type="text"] {
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  margin-right: 10px;
+}
+
+.user-input button {
+  background-color: cyan; 
+  color: white;
+  border: none;
+  border-radius: 50%;
+  
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-input button ion-icon {
+  font-size: 1.5em;
+}
+
+.chat-message.sent {
+  align-items:flex-end;
+  background-color: #e0f7fa; 
+  font-weight: bold;
+}
+
+.chat-message.received {
+  align-items: flex-start;
+  color: #ffffff; 
+}
+
