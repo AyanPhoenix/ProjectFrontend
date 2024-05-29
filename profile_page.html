@@ -9,14 +9,19 @@
 <body>
     <header>
         <h2 class="logo">IDEA CONNECT</h2>
-        <div id="search-bar">
-            <input type="text" id="search-input" placeholder="Search for products...">
+        <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+        <div class="search-bar">
+            <span class="icons"><ion-icon name="search-sharp"></ion-icon></span>
+            <input type="text" id="search-input" placeholder= "Search for products..."> 
             <button onclick="searchProfile()">Search</button>
         </div>
-        <div id="received-messages-box" style="border: 1px solid #ccc; padding: 5px; margin-top: 5px;">
-            <h3>Received Messages</h3>
-            <div id="message-list-container" style="max-height: 300px; overflow-y: auto;"></div>
-        </div>
+            <div id="received-messages-box" style="border: 1px solid #ccc; padding: 5px; margin-top: 5px; ">
+                <h3>Received Messages</h3>
+                <div id="message-list-container" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
         <nav class="navigation">
             <form id="logout-form" action="/logout" method="GET">
                 <button type="submit" id="log-out">Log Out</button>
@@ -49,14 +54,17 @@
     </div>
     <div class="container" id="chat-container" style="display: none;">
         <div class="chat-window">
-            <button type="button" class="close-button" onclick="closeChat()">Close</button>
-            Chat with <span id="chat-sender-name"></span>
+            <div class="chat-header">
+            <img id="chat-image" src="#" alt="chat-image" class="profile-image">
+            <div class="chat-title"></div>Chat with:&nbsp;<span id="chat-sender-name"></span> 
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button type="button" class="close-button" onclick="closeChat()"><ion-icon name="close-sharp"></ion-icon></button>
+            </div>
             <div class="chat-area">
                 <div class="chat-messages" id="chat-messages"></div>
             </div>
             <div class="user-input">
                 <input type="text" id="message-input" placeholder="Type your message...">
-                <button id="send-button" onclick="sendNewMessage()">Send</button>
+                <button id="send-button" onclick="sendNewMessage()"><ion-icon name="send-sharp"></ion-icon></button>
             </div>
         </div>
     </div>
@@ -151,11 +159,19 @@
                         const messageId = `message-input-${user._id}`;
                         messageInput.type = 'text';
                         messageInput.id = messageId;
+                        messageInput.style.borderRadius="9px";
+                        messageInput.style.padding="10px";
                         messageInput.placeholder = 'Type your message...';
                         userElement.appendChild(messageInput);
-                        
+
                         const sendMessageButton = document.createElement('button');
                         sendMessageButton.textContent = 'Send Message';
+                        sendMessageButton.style.backgroundColor="#e74c3c";
+                        sendMessageButton.style.color="white";
+                        sendMessageButton.style.padding="7px 15px";
+                        sendMessageButton.style.border="none";
+                        sendMessageButton.style.borderRadius="10px";
+                        sendMessageButton.style.cursor="pointer"
                         sendMessageButton.addEventListener('click', () => {
                             const userId = user._id; 
                             localStorage.setItem('recipient-id', userId);
@@ -243,6 +259,34 @@
             }
         }
 
+        async function sendChatMessage(userId, messageInput) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch('http://localhost:3000/sendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        recipientId: userId,
+                        message: messageInput
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                }
+                if (response.status === 200) {
+                    fetchMessages(); 
+                }
+            } catch (error) {
+                console.error('Error sending message:', error.message);
+            }
+        }
+
         async function displayMessageContent(messageId) {
             try {
                 const token = localStorage.getItem('token');
@@ -265,9 +309,25 @@
             }
         }
 
-        function openChat(userId, username) {
+        async function openChat(userId, username) {
             localStorage.setItem('recipient-id', userId);
             document.querySelector('#chat-container').style.display = 'block';
+            const res= await fetch(`http://localhost:3000/chatImage/${userId}`,{
+                method: 'GET',
+            });
+            const data = await res.json();
+            console.log("full image data:",data);
+            console.log("image data:",data.imagePath);
+            imagePath=data.imagePath;
+            if (imagePath) {
+                const chatImageElement = document.querySelector('#chat-image');
+                if (chatImageElement) {
+                    chatImageElement.src = imagePath;
+                    chatImageElement.style.height="45px";
+                    chatImageElement.style.width="45px";
+                    chatImageElement.style.borderRadius="20px";
+                }
+            }
             document.getElementById('chat-sender-name').textContent = username;
             fetchPreviousMessages(userId,username);
         }
@@ -294,9 +354,20 @@
                 data.messages.forEach(message => {
                     const messageElement = document.createElement('div');
                     messageElement.classList.add('chat-message');
-                    const messageText = message.senderId === userId ? `${username}: ${message.message}` :  `You: ${message.message}`;
-                   
-                    messageElement.textContent = messageText;
+                    
+                    if(message.senderId===userId){
+                        messageElement.classList.add('received');
+                        messageElement.textContent = `${username}: ${message.message}`;
+                        messageElement.style.backgroundColor="#003333";
+                        messageElement.style.alignSelf = "flex-start";
+                    }
+                    else{
+                        messageElement.classList.add('sent');
+                        messageElement.textContent = `You: ${message.message}`;
+                        messageElement.style.backgroundColor="#ffffff";
+                        messageElement.style.alignSelf = "flex-end";
+                    }
+                    
                     chatContainer.appendChild(messageElement);
                 });
             }catch (error) {
@@ -308,7 +379,7 @@
         async function sendNewMessage() {
             const userId = localStorage.getItem('recipient-id');
             const messageInput = document.getElementById('message-input').value;
-            await sendMessage(userId, messageInput);
+            await sendChatMessage(userId, messageInput);
             document.getElementById('message-input').value = ''; 
             await fetchPreviousMessages(userId); 
         }

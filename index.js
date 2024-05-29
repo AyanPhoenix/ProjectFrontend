@@ -535,6 +535,19 @@ app.get('/messages/:userId', async (req, res) => {
   }
 });
 
+app.get('/chatImage/:userId',async(req,res)=>{
+
+  const userId=req.params.userId;
+  if(!userId){
+    console.log('No request found');
+  }
+  const image= await Profile.findOne({userId:userId});
+  if(!image){
+    return res.status(404).json({message:`No data found`});
+  }
+  return res.status(200).json({imagePath:image.profilePicture});
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
