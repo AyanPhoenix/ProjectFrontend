@@ -113,14 +113,14 @@ header {
 }
 
 .wrapper.active {
-    height: 520px;
+    height: 540px;
 }
 
 .wrapper .form-box {
     width: 100%;
     padding: 40px;
-    background-color: rgba(0, 0, 0, 0.6); /* Darker transparent background */
-    border-radius: 50px; /* Rounded corners */
+    background-color: rgba(0, 0, 0, 0.6); 
+    border-radius: 50px; 
 }
 
 .wrapper .form-box.login {
@@ -138,7 +138,7 @@ header {
     position: absolute;
     transition: none;
     width: 100%;
-    height: 520px;
+    height: 545px;
     padding: 42px;
     transform: translateX(400px);
 }
@@ -205,4 +205,12 @@ button[type="submit"]:hover {
 
 .textbox .icon {
     margin-right: 10px;
+}
+
+.gst #gst-btn{
+    background-color: #162937;
+    color: white;
+    padding: 5 0 5 0;
+    border: white;
+
 }
