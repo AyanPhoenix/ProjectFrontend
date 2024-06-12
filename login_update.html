@@ -12,9 +12,8 @@
       <h2 class="logo">IDEA CONNECT</h2>
       <nav class="navigation">
         <a href="#">Home</a>
-        <a href="#">Top ideas</a>
-        <a href="#">Connect</a>
-        <a href="#">Contact</a>
+        <a href="connect.html">Connect</a>
+        <a href="contact.html">Contact</a>
         <button class="btnLogin-popup">Login</button>
       </nav>
     </header>
@@ -78,7 +77,7 @@
       </div>
       <div class="form-box register">
         <h2>Registration</h2>
-        <form action="#" id="register-form" name="regform" onsubmit="return validation()">
+        <form action="#" id="register-form" name="regform" onsubmit="return handleSubmit(event)">
           <div class="input-box">
             <span class="icon"><ion-icon name="person"></ion-icon></span>
             <input type="text" id="username" name="username" required />
@@ -86,7 +85,7 @@
           </div>
           <div class="input-box">
             <span class="icon"><ion-icon name="mail"></ion-icon></span>
-            <input type="email" id="email" name="email" onchange="validation()" required />
+            <input type="email" id="email" name="email" required />
             <label>Email</label>
             <div id="email_error"></div>
           </div>
@@ -97,12 +96,18 @@
             <div id="pass_err"></div>
           </div>
           <p id="result"></p><br>
+          <div class="gst">
+          <span class="icon"><ion-icon name="card"></ion-icon></span> 
+          <input type="text" id="gst-input">GST No.
+          <button type="button" id="gst-btn" onclick="validateGSTIN()">Verify</button>
+          <span id="verify-message"></span>
+        </div>
           <div class="remember-forgot">
-            <label
-              ><input type="checkbox" id="agreecon" required /> I agree to the
-              conditions</label> <br><br>
+            <label>
+              <input type="checkbox" id="agreecon" required /> I agree to the conditions
+            </label> <br>
           </div>
-          <button type="submit" class="btn" id="regbtn">REGISTER</button><br><br>
+          <button type="submit" class="btn" id="regbtn">REGISTER</button><br>
           <div class="login-register">
             <p>
               Already have an account?
@@ -137,72 +142,69 @@
             password_error.style.color = "white";
             return true;
         }
-    }
+      }
     
       function validation() {
         var email = document.getElementsByName("email")[0].value;
         const email_pattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
         var email_error = document.querySelector("#email_error");
-        var regex=RegExp(email_pattern)
+        var regex = RegExp(email_pattern);
     
         if (!regex.test(email)) {
             email_error.innerHTML = "Invalid email";
             email_error.style.color = "cyan";
             return false;
-           
         } else {
-          email_error.innerHTML="Verified";
-          email_error.style.color="white";
+          email_error.innerHTML = "Verified";
+          email_error.style.color = "white";
           return true;
         }
       }
-      let form = document.querySelector("#register-form");
-          form.addEventListener("submit", handleSubmit);
     
-          function handleSubmit(event) {
-            event.preventDefault();
-            if(validation() && checkpassword()){
-              let formData = new FormData(form);
-              let data = Object.fromEntries(formData);
-              let jsonData = JSON.stringify(data);
-            
-              fetch("http://localhost:3000/register", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: jsonData,
-              })
-                .then((res) => {
-                  if (res.ok) {
-                    console.log("Connection Successful");
-                    return res.json();
-                  }else if(res.status===401){
-                    alert("User already exists");
-                  }else if(res.status===400){
-                    alert("Email ID already exists");
-                  }else if(res.status===404){
-                    alert("Invalid Email Id");
-                  }
-                   else {
-                    console.error("Error:", res.statusText);
-                  }
-                }).then((data) => {
-                  const cookieString = data.token;
-                  console.log("Data ", data);
-                  console.log("cookie ", cookieString);
-                  if (cookieString) {
-                    localStorage.setItem("token", cookieString);
-                  }
-                  window.location.href = "complete-profile.html";
-                })
-                .catch((err) => console.error(err));
-            }
-          } 
-    </script>
-    <script>
+      function handleSubmit(event) {
+        event.preventDefault();
+        if (validation() && checkpassword() && validateGSTIN()) {
+          let formData = new FormData(document.getElementById("register-form"));
+          let data = Object.fromEntries(formData);
+          let jsonData = JSON.stringify(data);
+    
+          fetch("http://localhost:3000/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: jsonData,
+          })
+            .then((res) => {
+              if (res.ok) {
+                console.log("Connection Successful");
+                return res.json();
+              } else if (res.status === 401) {
+                alert("User already exists");
+              } else if (res.status === 400) {
+                alert("Email ID already exists");
+              } else if (res.status === 404) {
+                alert("Invalid Email Id");
+              } else {
+                console.error("Error:", res.statusText);
+              }
+            })
+            .then((data) => {
+              const cookieString = data.token;
+              console.log("Data ", data);
+              console.log("cookie ", cookieString);
+              if (cookieString) {
+                localStorage.setItem("token", cookieString);
+              }
+              window.location.href = "complete-profile.html";
+            })
+            .catch((err) => console.error(err));
+        }
+      }
+    
       let loginForm = document.querySelector("#login");
       loginForm.addEventListener("submit", handleLogin);
+    
       function handleLogin(event) {
         event.preventDefault();
         let formData = new FormData(loginForm);
@@ -210,30 +212,36 @@
         let jsonData = JSON.stringify(data);
     
         fetch("http://localhost:3000/login", {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: jsonData,
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: jsonData,
         })
         .then((res) => {
-            if (res.ok) {
-                return res.json(); 
-            } else {
-                throw new Error("Invalid credentials");
-            }
+          if (res.ok) {
+            return res.json();
+          } else {
+            throw new Error("Invalid credentials");
+          }
         })
         .then((data) => {
-            console.log("Login Successful!!!");
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("userId", data.userId); 
+          console.log("Login Successful!!!");
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userId", data.userId);
+          console.log("login token:", data.token);
+          if (data.token) {
             window.location.href = "profile_page.html";
+          } else {
+            alert("Please login first");
+            return;
+          }
         })
         .catch((err) => {
-            console.error("Error:", err.message);
-            alert(err.message);
+          console.error("Error:", err.message);
+          alert(err.message);
         });
-    }
+      }
     
       function rememberMe() {
         const username = document.querySelector('input[name="username"]').value;
@@ -241,15 +249,15 @@
         const rememberCheckbox = document.getElementById("rememberme");
     
         if (rememberCheckbox.checked) {
-            localStorage.setItem("rememberedUsername", username);
-            localStorage.setItem("rememberedPassword", password);
+          localStorage.setItem("rememberedUsername", username);
+          localStorage.setItem("rememberedPassword", password);
         } else {
-            localStorage.removeItem("rememberedUsername");
-            localStorage.removeItem("rememberedPassword");
+          localStorage.removeItem("rememberedUsername");
+          localStorage.removeItem("rememberedPassword");
         }
-    }
+      }
     
-    function prefillLoginFields() {
+      function prefillLoginFields() {
         const rememberedUsername = localStorage.getItem("rememberedUsername");
         const rememberedPassword = localStorage.getItem("rememberedPassword");
         const usernameField = document.querySelector('input[name="username"]');
@@ -257,15 +265,56 @@
         const rememberCheckbox = document.getElementById("rememberme");
     
         if (rememberedUsername && rememberedPassword) {
-            usernameField.value = rememberedUsername;
-            passwordField.value = rememberedPassword;
-            rememberCheckbox.checked = true;
+          usernameField.value = rememberedUsername;
+          passwordField.value = rememberedPassword;
+          rememberCheckbox.checked = true;
         }
-    }
+      }
     
-    window.addEventListener('load', prefillLoginFields);
+      window.addEventListener('load', prefillLoginFields);
     
+      function isValidGSTIN(gstin) {
+        if (!gstin || gstin.length !== 15) {
+          return false;
+        }
+    
+        const gstinPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    
+        if (!gstinPattern.test(gstin)) {
+          return false;
+        }
+    
+        return validateGSTINChecksum(gstin);
+      }
+    
+      function validateGSTINChecksum(gstin) {
+        let regTest = /\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}/.test(gstin);
+        if (regTest) {
+          let a = 65, b = 55, c = 36;
+          return Array.from(gstin).reduce((i, j, k, g) => {
+            let p = (j.charCodeAt(0) < a ? parseInt(j) : j.charCodeAt(0) - b) * (k % 2 + 1);
+            p = p > c ? 1 + (p - c) : p;
+            return k < 14 ? i + p : j == ((c = (c - (i % c))) < 10 ? c : String.fromCharCode(c + b));
+          }, 0);
+        }
+        return regTest;
+      }
+    
+      function validateGSTIN() {
+        const gstin = document.getElementById('gst-input').value;
+        console.log('input gst:', gstin);
+        const verifyMessage = document.getElementById('verify-message');
+    
+        if (isValidGSTIN(gstin) && validateGSTINChecksum(gstin)) {
+          verifyMessage.innerHTML = 'Verified';
+          verifyMessage.style.color = 'cyan';
+          return true;
+        } else {
+          verifyMessage.innerHTML = 'Invalid GSTIN';
+          verifyMessage.style.color = 'red';
+          return false;
+        }
+      }
     </script>
-    
   </body>
 </html>
