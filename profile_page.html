@@ -31,7 +31,7 @@
     <div class="profile-container">
         <h1>Welcome <span id="profile-username"></span></h1>
         <div class="profile-details">
-            <div><img id="profile-picture" src="" alt="Profile Picture"></div>
+            <div class="profile-pic"><img id="profile-picture" src="" alt="Profile Picture"></div>
             <div><strong>Email:</strong> <span id="profile-email"></span></div>
             <div><strong>Skills:</strong> <span id="profile-skills"></span></div>
             <div><strong>Expertise:</strong> <span id="profile-expertise"></span></div>
@@ -69,32 +69,83 @@
         </div>
     </div>
     <script src="main.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.977.0.min.js"></script>
     <script>
-        async function logout() {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('Token not found in local storage');
-                }
-                const response = await fetch("http://localhost:3000/logout", {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+        AWS.config.update({
+            accessKeyId: 'AKIAVRUVQM6VTV3XDIFO',
+            secretAccessKey: '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',
+            region: 'ap-south-1'
+          });
+          async function addProduct() {
+            const productPictureFile = document.getElementById("product-image-input").files[0];
+            const productCaption = document.getElementById("product-caption-input").value;
+        
+            if (productPictureFile) {
+                const productPictureUrl = await uploadImage(productPictureFile);
+        
+                const rekognition = new AWS.Rekognition();
+        
+                const analyzeImage = async (file) => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                            const imageBytes = new Uint8Array(event.target.result);
+        
+                            const params = {
+                                Image: {
+                                    Bytes: imageBytes,
+                                },
+                                MaxLabels: 10,
+                                MinConfidence: 75,
+                            };
+        
+                            try {
+                                const response = await rekognition.detectLabels(params).promise();
+                                console.log('Labels:', response.Labels);
+        
+                                const handmadeRelated = response.Labels.some(label => 
+                                    ['handmade', 'craft', 'art', 'sculpture', 'ceramics', 'handcrafted', 'pottery'].includes(label.Name.toLowerCase())
+                                );
+        
+                                if (handmadeRelated) {
+                                    console.log('The image likely contains handmade products.');
+                                    resolve(true);
+                                } else {
+                                    alert('No handmade products detected in the image.');
+                                    resolve(false);
+                                }
+                            } catch (error) {
+                                alert('Error analyzing image:', error);
+                                reject(error);
+                            }
+                        };
+                        reader.onerror = (error) => {
+                            reject(error);
+                        };
+                        reader.readAsArrayBuffer(file);
+                    });
+                };
+        
+                try {
+                    const result = await analyzeImage(productPictureFile);
+        
+                    if (result) {
+                        const product = {
+                            image: productPictureUrl,
+                            caption: productCaption
+                        };
+                        products.push(product);
+                        displayProducts();
+                        await saveProfile();
                     }
-                });
-                if (!response.ok) {
-                    throw new Error('Logout failed');
+                } catch (error) {
+                    console.error('Error analyzing image:', error);
                 }
-                if (response.status === 200) {
-                    localStorage.removeItem('token');
-                    alert("Logged out successfully");
-                    window.location.href="login_update.html";
-                }
-            } catch (err) {
-                console.error(err);
+            } else {
+                alert('Please select a valid image');
             }
         }
-
+        
         async function searchProfile() {
             try {
                 const searchInput = document.getElementById('search-input').value;
@@ -191,6 +242,31 @@
                 }
             } catch (error) {
                 console.error('Error searching profile:', error.message);
+            }
+        }
+
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Token not found in local storage');
+                }
+                const response = await fetch("http://localhost:3000/logout", {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Logout failed');
+                }
+                if (response.status === 200) {
+                    localStorage.removeItem('token');
+                    alert("Logged out successfully");
+                    window.location.href="login_update.html";
+                }
+            } catch (err) {
+                console.error(err);
             }
         }
 
