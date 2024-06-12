@@ -12,6 +12,7 @@
         <div class="otpverify" style="display: none;">
             <input type="text" id="otp_inp" placeholder="Enter the OTP sent to your Email...">
             <button class="btn" id="verify-btn">Verify</button>
+            <br><button class="btn" style="display: none;" id="resend-otp-btn" onclick="sendOTP()">Resend OTP</button>
         </div>
         <button class="btn" id="send-otp-btn">Send OTP</button>
         <a href="login_update.html">Back</a>
@@ -39,6 +40,8 @@
             const otpInput = document.getElementById('otp_inp');
             const verifyBtn = document.getElementById('verify-btn');
             const otp_val = Math.floor(Math.random() * 10000);
+            document.getElementById('send-otp-btn').style.display='none';
+            document.getElementById('resend-otp-btn').style.display='block';
 
             Email.send({
                 SecureToken: "8250eef-8249-491d-bb02-848fe3928811",
@@ -132,7 +135,7 @@
             .then(res => {
                 if (res.ok) {
                     alert("Password updated successfully");
-                    window.open();
+                    window.location.href="profile_page.html";
                 } else if (res.status === 400) {
                     alert("password do not match");
                 } else {
