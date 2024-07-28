@@ -19,7 +19,7 @@
         <label for="product-image-input">Upload Product Image:</label>
         <input type="file" id="product-image-input" name="productImage"/>
         <div id="validation-result"></div>
-        <input type="text" id="product-caption-input" name="productCaption" placeholder="Caption"/>
+        <input type="text" id="product-caption-input" name="productCaption" placeholder="Caption" required/>
       </div>
       <br /><br />
       <div id="product-list"></div>
@@ -97,10 +97,18 @@
               if (captions) {
                 try {
                   const file = document.getElementById('product-image-input').files[0];
+                  let labels = '';
+                  for (let i = 0; i < response.Labels.length; i++) {
+                    labels += response.Labels[i].Name;
+                    if (i < response.Labels.length - 1) {
+                      labels += ', ';
+                    }
+                  }
+                  console.log('Label:',labels);
                   const productImageUrl = await uploadImage(file);
                   const product = {
                     image: productImageUrl,
-                    caption: captions
+                    caption: `${captions} , ${labels}`
                   };
                   products.push(product);
                   displayProducts();

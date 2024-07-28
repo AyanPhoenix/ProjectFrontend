@@ -22,6 +22,11 @@
                 <h3>Received Messages</h3>
                 <div id="message-list-container" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
+            <div id="admin-features" style="display: none;">
+                <h2>Admin Features</h2>
+                <button onclick="viewAllUsers()">View All Users</button>
+                <button onclick="deleteUser()">Delete a User</button>
+            </div>
         <nav class="navigation">
             <form id="logout-form" action="/logout" method="GET">
                 <button type="submit" id="log-out">Log Out</button>
@@ -384,7 +389,7 @@
                 console.error('Error fetching message content:', error.message);
             }
         }
-
+        
         async function openChat(userId, username) {
             localStorage.setItem('recipient-id', userId);
             document.querySelector('#chat-container').style.display = 'block';
@@ -451,7 +456,65 @@
             }
         }
         
+        async function checkAdminStatus() {
+            try {
+                const userID = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:3000/profile_admin/${userID}`, {
+                    method: 'GET'
 
+                });
+                const data = await response.json();
+        
+                if (data.user.role === 'admin') {
+                    document.getElementById('admin-features').style.display = 'block';
+                    document.getElementById('received-messages-box').style,display='none';
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+            }
+        }
+        async function viewAllUsers() {
+            try {
+                const token=localStorage.getItem('token');
+                const response = await fetch(`http://localhost:3000/admin/users/${token}`, {
+                    method:'GET'
+                });
+                const users = await response.json();
+                console.log('Users:', users);
+                const userList = document.createElement('div');
+                users.forEach(user => {
+                    const userElement = document.createElement('div');
+                    userElement.setAttribute('data-id', user._id);
+                    userElement.innerHTML = `ID:${user._id} ,Username: ${user.username}, Email: ${user.email}`;
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = () => deleteUser(user._id); 
+        
+                    userElement.appendChild(deleteButton);
+                    userList.appendChild(userElement);
+                });
+        
+                document.querySelector('.profile-container').appendChild(userList);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }        
+        async function deleteUser(userId) {
+            try {
+                const response = await fetch(`http://localhost:3000/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+        
+                if (response.ok) {
+                    console.log('User deleted successfully');
+                    document.querySelector(`[data-id="${userId}"]`).remove();
+                } else {
+                    console.error('Failed to delete user:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+            }
+        }
         async function sendNewMessage() {
             const userId = localStorage.getItem('recipient-id');
             const messageInput = document.getElementById('message-input').value;
@@ -475,7 +538,11 @@
             await logout();
         });
 
-        window.onload = fetchMessages;
+        window.onload = () => {
+            fetchMessages();
+            checkAdminStatus();
+        };
+        
     </script>
 </body>
 </html>

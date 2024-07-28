@@ -6,6 +6,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const cookieparser = require("cookie-parser");
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
+const { type } = require("os");
 require("dotenv").config();
 
 const uploadDir = path.join(__dirname, "uploads");
@@ -22,6 +24,11 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
+
+const client = new ImageAnnotatorClient({
+  keyFilename: path.join(__dirname, 'final-year-project-425215-de0a6558e71d.json'),
+});
+
 
 const upload = multer({ storage: storage });
 
@@ -42,14 +49,7 @@ const userSchema = new mongoose.Schema(
     username: String,
     email: String,
     password: String,
-    tokens: [
-      {
-        token: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
+    role:String
   },
   { collection: "users" }
 );
@@ -524,7 +524,6 @@ app.get('/messages/:userId', async (req, res) => {
     if(!messages){
       return res.status(404).json({message:"No user found"});
     }
-    console.log("messss:",messages);
     const usernames= await User.findOne({_id:userID});
     return res.status(200).json({error:false ,username:usernames.username, messages:messages});
 
@@ -546,6 +545,85 @@ app.get('/chatImage/:userId',async(req,res)=>{
     return res.status(404).json({message:`No data found`});
   }
   return res.status(200).json({imagePath:image.profilePicture});
+});
+
+const connectSchema=new mongoose.Schema({
+  name:{
+    type:String,
+    required:true
+  },
+  email:{
+    type:String,
+    required:true
+  },
+  idea:{
+    type:String,
+    required:true
+  }
+},{collection:'connect-submission'});
+
+const Connect=mongoose.model('connect-submission',connectSchema);
+
+app.post('/submit-idea', async(req, res) => {
+  try{
+  const { name, email, idea } = req.body;
+  console.log(req.body);
+
+  if(!name || !email || !idea){
+    return res.status(400).json({ error: 'Please fill all the fields' });
+  }
+
+  console.log(`Name: ${name}`);
+  console.log(`Email: ${email}`);
+  console.log(`Idea: ${idea}`);
+  await Connect.create({ name, email, idea });
+
+    res.status(200).json({ message: 'Idea submitted successfully!' });
+  }catch{
+    console.error('Error submitting idea:', error);
+  }
+});
+
+app.get('/profile_admin/:userID', async (req, res) => {
+  try {
+      const userId = req.params.userID;
+      const decodedToken=jwt.verify(userId,process.env.SECRET_KEY);
+      const user = await User.findById(decodedToken);
+      if (!user) return res.sendStatus(404);
+      res.json({ user });
+  } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.sendStatus(500);
+  }
+});
+
+app.get('/admin/users/:token', async (req, res) => {
+  const token=req.params.token;
+  const decodedToken=jwt.verify(token,process.env.SECRET_KEY);
+  const admin = await User.findById(decodedToken);
+  if(admin.role==='admin'){
+  try {
+    const users = await User.find();
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+ }
+});
+
+app.delete('/admin/users/:userId', async (req, res) => {
+  try {
+      const userId = req.params.userId;
+      const result = await User.findByIdAndDelete(userId);
+      if (!result) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+      res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 app.listen(port, () => {
