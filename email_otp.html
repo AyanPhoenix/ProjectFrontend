@@ -3,7 +3,6 @@
 <head>
     <title>Email Verification and Password Change</title>
     <link rel="stylesheet" href="email_otp.css">
-    <script src="https://smtpjs.com/v3/smtp.js"></script>
 </head>
 <body>
     <div class="form">
@@ -34,63 +33,60 @@
     <script>
         document.getElementById('send-otp-btn').addEventListener('click', sendOTP);
 
-        function sendOTP() {
+        async function sendOTP() {
             const email = document.getElementById('email').value;
             const otpverify = document.querySelector('.otpverify');
             const otpInput = document.getElementById('otp_inp');
             const verifyBtn = document.getElementById('verify-btn');
             const otp_val = Math.floor(Math.random() * 10000);
-            document.getElementById('send-otp-btn').style.display='none';
-            document.getElementById('resend-otp-btn').style.display='block';
+            document.getElementById('send-otp-btn').style.display = 'none';
+            document.getElementById('resend-otp-btn').style.display = 'block';
 
-            Email.send({
-                SecureToken: "8250eef-8249-491d-bb02-848fe3928811",
-                Host: "smtp.elasticemail.com",
-                Username: "ayanwestbengal20@gmail.com",
-                Password: "DA4E184B771237DE28F93B9611122898DDA7",
-                To: email,
-                From: "ayanwestbengal20@gmail.com",
-                Subject: "OTP verification",
-                Body: "Your OTP is " + otp_val,
-            }).then(message => {
-                if (message === "OK") {
-                    fetch("http://localhost:3000/email_check", {
+            try {
+                const response = await fetch('http://localhost:3000/send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: email, otp: otp_val }),
+                });
+
+                const message = await response.json();
+
+                if (message.success) {
+                    const checkEmailResponse = await fetch("http://localhost:3000/email_check", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({ email: email }),
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.message === "User found") {
-                            alert("OTP sent to " + email);
-                            otpverify.style.display = "flex";
-                            verifyBtn.addEventListener('click', function () {
-                                if (otpInput.value == otp_val) {
-                                    alert("Email address verified...");
-                                    document.querySelector('.change_pass').style.display = "block";
-                                    document.getElementById('email_hidden').value = email; 
-                                    document.getElementById('email').style.display = 'none'; 
-                                } else {
-                                    alert("Invalid OTP");
-                                }
-                            });
-                            timer(60);
-                        } else {
-                            throw new Error("Invalid email Id");
-                        }
-                    })
-                    .catch(error => {
-                        alert("Error: " + error.message);
                     });
+
+                    const data = await checkEmailResponse.json();
+
+                    if (data.message === "User found") {
+                        alert("OTP sent to " + email);
+                        otpverify.style.display = "flex";
+                        verifyBtn.addEventListener('click', function () {
+                            if (otpInput.value == otp_val) {
+                                alert("Email address verified...");
+                                document.querySelector('.change_pass').style.display = "block";
+                                document.getElementById('email_hidden').value = email; 
+                                document.getElementById('email').style.display = 'none'; 
+                            } else {
+                                alert("Invalid OTP");
+                            }
+                        });
+                        timer(60);
+                    } else {
+                        throw new Error("Invalid email Id");
+                    }
                 } else {
-                    throw new Error("Error occurred while sending OTP: " + JSON.stringify(message));
+                    throw new Error("Error occurred while sending OTP: " + message.error);
                 }
-            })
-            .catch(error => {
-                alert("Error occurred while sending OTP: " + error.message);
-            });
+            } catch (error) {
+                alert("Error occurred: " + error.message);
+            }
         }
 
         function timer(remaining) {
@@ -113,7 +109,7 @@
         let form = document.querySelector("#chng_pass");
         form.addEventListener("submit", modifypass);
 
-        function modifypass(event) {
+        async function modifypass(event) {
             event.preventDefault();
             let newPass = document.getElementById('newpassword').value;
             let conPass = document.getElementById('conpassword').value;
@@ -125,27 +121,27 @@
 
             let email = document.getElementById('email_hidden').value;
 
-            fetch("http://localhost:3000/modify", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body:JSON.stringify({ email: email, newpassword: newPass, conpassword: conPass }),
-            })
-            .then(res => {
+            try {
+                const res = await fetch("http://localhost:3000/modify", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ email: email, newpassword: newPass, conpassword: conPass }),
+                });
+
                 if (res.ok) {
                     alert("Password updated successfully");
-                    window.location.href="profile_page.html";
+                    window.location.href = "login_update.html";
                 } else if (res.status === 400) {
-                    alert("password do not match");
+                    alert("Password do not match");
                 } else {
                     throw new Error("An error occurred");
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error("Fetch Error:", error);
                 alert("An error occurred");
-            });
+            }
         }
     </script>
 </body>

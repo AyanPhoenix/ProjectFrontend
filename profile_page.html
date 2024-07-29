@@ -25,7 +25,6 @@
             <div id="admin-features" style="display: none;">
                 <h2>Admin Features</h2>
                 <button onclick="viewAllUsers()">View All Users</button>
-                <button onclick="deleteUser()">Delete a User</button>
             </div>
         <nav class="navigation">
             <form id="logout-form" action="/logout" method="GET">
@@ -467,7 +466,17 @@
         
                 if (data.user.role === 'admin') {
                     document.getElementById('admin-features').style.display = 'block';
-                    document.getElementById('received-messages-box').style,display='none';
+                    document.getElementById('received-messages-box').style.display='none';
+                    const searchBars = document.getElementsByClassName('search-bar');
+                    for (let i = 0; i < searchBars.length; i++) {
+                        searchBars[i].style.display = 'none';
+                    }
+                }
+                else if (data.user.role === 'seller') {
+                    const searchBars = document.getElementsByClassName('search-bar');
+                    for (let i = 0; i < searchBars.length; i++) {
+                        searchBars[i].style.display = 'none';
+                    }
                 }
             } catch (error) {
                 console.error('Error checking admin status:', error);
@@ -483,18 +492,21 @@
                 console.log('Users:', users);
                 const userList = document.createElement('div');
                 users.forEach(user => {
+                    if(user.role !='admin'){
                     const userElement = document.createElement('div');
                     userElement.setAttribute('data-id', user._id);
-                    userElement.innerHTML = `ID:${user._id} ,Username: ${user.username}, Email: ${user.email}`;
+                    userElement.innerHTML = `ID:${user._id} ,Username: ${user.username},Role:${user.role}, Email: ${user.email}`;
                     const deleteButton = document.createElement('button');
                     deleteButton.textContent = 'Delete';
                     deleteButton.onclick = () => deleteUser(user._id); 
         
                     userElement.appendChild(deleteButton);
                     userList.appendChild(userElement);
+                    }
                 });
         
                 document.querySelector('.profile-container').appendChild(userList);
+                userList.scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
                 console.error('Error fetching users:', error);
             }
